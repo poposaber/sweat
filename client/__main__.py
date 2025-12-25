@@ -1,6 +1,7 @@
 import argparse
 import logging
 from .client_controller import ClientController
+import customtkinter
 from .client_gui import ClientGUI
 
 
@@ -19,9 +20,10 @@ def main():
 
 	logging.basicConfig(level=getattr(logging, args.log_level), format='%(asctime)s %(levelname)s [%(name)s] %(message)s')
 	# Create controller first without GUI, then bind GUI to controller to avoid circular init
-	controller = ClientController(addr=(args.host, args.port), gui=None, trace_io=args.trace_io)
-	app = ClientGUI(client_controller=controller)
-	controller.set_gui(app)
+	root = customtkinter.CTk()
+	controller = ClientController(addr=(args.host, args.port), gui=root, trace_io=args.trace_io)
+	app = ClientGUI(root=root, client_controller=controller)
+	# controller.set_gui(app)
 
 	app.mainloop()
 
