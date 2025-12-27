@@ -3,7 +3,7 @@ from client.infra.connector import Connector
 from session.session import Session
 from client.api import auth
 
-NORMAL_TIMEOUT = 2.0  # seconds
+NORMAL_TIMEOUT = 3.0  # seconds
 
 class Client:
     def __init__(self, addr: tuple[str, int], trace_io: bool = False) -> None:
@@ -28,20 +28,26 @@ class Client:
     def settimeout(self, timeout: float | None) -> None:
         if self._session is None:
             raise RuntimeError("Client is not connected")
-        self._session.settimeout(timeout)
+        self._session.set_send_timeout(timeout)
+        self._session.set_recv_timeout(timeout)
     
     def close(self) -> None:
         if self._session:
             self._session.close()
             self._session = None
 
-    def login(self, username: str, password: str):
+    def login(self, username: str, password: str, role: str):
         if self._session is None:
             raise RuntimeError("Client is not connected")
-        return auth.login(self._session, username=username, password=password)
+        return auth.login(self._session, username=username, password=password, role=role)
 
     def logout(self):
         if self._session is None:
             raise RuntimeError("Client is not connected")
         return auth.logout(self._session)
+    
+    def register(self, username: str, password: str, role: str):
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        return auth.register(self._session, username=username, password=password, role=role)
 

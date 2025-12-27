@@ -42,12 +42,39 @@ class ClientController:
                         cb_err(e)
         threading.Thread(target=_work, daemon=True).start()
 
-    def login(self, username: str, password: str,
+    def login(self, username: str, password: str, role: str,
               on_result: Optional[Callable[[], None]] = None,
               on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
-                self._client.login(username, password)
+                resp = self._client.login(username, password, role)
+                if not resp.ok:
+                    raise Exception(resp.error or "Login failed")
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
+            except Exception as e:
+                cb_err = on_error
+                if cb_err:
+                    if self._gui:
+                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                    else:
+                        cb_err(e)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def register(self, username: str, password: str, role: str,
+              on_result: Optional[Callable[[], None]] = None,
+              on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                resp = self._client.register(username, password, role)
+                if not resp.ok:
+                    raise Exception(resp.error or "Registration failed")
+
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:

@@ -1,9 +1,13 @@
 from protocol.enums import Action, MessageType
 from protocol.message import Message
 from server.handlers import auth as auth_handlers
+from server.infra.database import Database
 
 
 class Dispatcher:
+	def __init__(self, db: Database):
+		self._db = db
+
 	def dispatch(self, message: Message) -> Message:
 		# Only handle requests; for non-request, echo payload and mark failed
 		assert message.action is not None
@@ -16,18 +20,19 @@ class Dispatcher:
 			)
 
 		if message.action == Action.LOGIN:
-			payload, ok = auth_handlers.handle_login(message.payload)
+			payload, ok, error = auth_handlers.handle_login(message.payload, self._db)
 		elif message.action == Action.REGISTER:
-			payload, ok = auth_handlers.handle_register(message.payload)
+			payload, ok, error = auth_handlers.handle_register(message.payload, self._db)
 		elif message.action == Action.LOGOUT:
-			payload, ok = auth_handlers.handle_logout(message.payload)
+			payload, ok, error = auth_handlers.handle_logout(message.payload)
 		else:
 			# Unknown action: echo payload, mark failed
-			payload, ok = message.payload, False
+			payload, ok, error = message.payload, False, "Unknown action"
 
 		return Message.response(
 			message.action,
 			payload,
 			msg_id=message.msg_id,
 			ok=ok,
+			error=error,
 		)

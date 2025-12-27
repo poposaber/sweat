@@ -5,12 +5,13 @@ from .enums import MessageType, Action
 from typing import Optional
 
 class Message:
-    def __init__(self, *, type: MessageType, payload, action: Action, msg_id: Optional[str]=None, ok: Optional[bool]=None):
+    def __init__(self, *, type: MessageType, payload, action: Action, msg_id: Optional[str]=None, ok: Optional[bool]=None, error: Optional[str]=None):
         self.type = type
         self.action = action
         self.payload = payload
         self.msg_id = msg_id
         self.ok = ok
+        self.error = error
 
     @classmethod
     def request(cls, action: Action, payload):
@@ -22,13 +23,14 @@ class Message:
         )
 
     @classmethod
-    def response(cls, action: Action, payload, *, msg_id: Optional[str]=None, ok: Optional[bool]=True):
+    def response(cls, action: Action, payload, *, msg_id: Optional[str]=None, ok: Optional[bool]=True, error: Optional[str]=None):
         """Convenience constructor for a response message.
 
         - action: corresponding `Action` for routing/decoding
         - payload: response payload (dataclass or dict)
         - msg_id: optional correlation id (e.g., same as request's id)
         - ok: operation success flag (defaults to True)
+        - error: optional error message
         """
         return cls(
             type=MessageType.RESPONSE,
@@ -36,6 +38,7 @@ class Message:
             payload=payload,
             msg_id=msg_id,
             ok=ok,
+            error=error,
         )
     
     @classmethod

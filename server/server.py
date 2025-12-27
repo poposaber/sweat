@@ -5,6 +5,7 @@ from server.infra.acceptor import Acceptor
 from session.session import Session
 from server.dispatcher import Dispatcher
 from session.errors import SessionDisconnectedError
+from server.infra.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,8 @@ class Server:
     def __init__(self, addr: tuple[str, int], trace_io: bool = False):
         self._addr = addr
         self._acceptor = Acceptor(addr)
-        self._dispatcher = Dispatcher()
+        self._db = Database()
+        self._dispatcher = Dispatcher(self._db)
         self._stop_event = threading.Event()
         self._threads: list[threading.Thread] = []
         self._sessions: list[Session] = []
@@ -35,12 +37,12 @@ class Server:
                     break
                 logger.exception("Accept failed")
                 continue
-            t = threading.Thread(target=self._client_loop, args=(session,), daemon=True)
+            t = threading.Thread(target=self._client_loop, args=(session, addr), daemon=True)
             self._threads.append(t)
             self._sessions.append(session)
             t.start()
 
-    def _client_loop(self, session: Session):
+    def _client_loop(self, session: Session, addr: Optional[tuple[str, int]] = None):
         """Per-connection loop: receive, dispatch, respond until error or stop."""
         try:
             while not self._stop_event.is_set():
@@ -51,9 +53,15 @@ class Server:
                 except Exception as e:
                     # 正常斷線：降低為 info，其他錯誤保留堆疊
                     if isinstance(e, SessionDisconnectedError):
-                        logger.info("Client disconnected")
+                        if addr:
+                            logger.info(f"Client {addr[0]}:{addr[1]} disconnected")
+                        else:
+                            logger.info("Client disconnected")
                     else:
-                        logger.exception("Client handler error or disconnect")
+                        if addr:
+                            logger.exception(f"Client {addr[0]}:{addr[1]} handler error or disconnect")
+                        else:
+                            logger.exception("Client handler error or disconnect")
                     break
         finally:
             try:

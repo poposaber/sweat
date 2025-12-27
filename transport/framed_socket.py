@@ -15,12 +15,21 @@ class FramedSocket:
         self._sock = sock
         self._send_lock = threading.Lock()
         self._recv_lock = threading.Lock()
-        self._timeout: float | None = None
+        self._send_timeout: float | None = None
         self._recv_timeout: float | None = None
 
     def send(self, data: bytes):
         try:
             length_prefix = struct.pack('!I', len(data))
+            if self._send_timeout is not None:
+                _, wlist, _ = select.select([], [self._sock], [], self._send_timeout)
+                if not wlist:
+                    peer = None
+                    try:
+                        peer = self._sock.getpeername()
+                    except Exception:
+                        peer = '<unknown>'
+                    raise InteractionTimeoutError(f"Send timed out to {peer}")
             with self._send_lock:
                 self._sock.sendall(length_prefix + data)
         except socket.timeout as e:
@@ -81,6 +90,7 @@ class FramedSocket:
                             peer = self._sock.getpeername()
                         except Exception:
                             peer = '<unknown>'
+                        # logger.debug("Receive timed out waiting for data from %s", peer)
                         raise InteractionTimeoutError(f"Receive timed out from {peer}")
                 with self._recv_lock:
                     chunk = self._sock.recv(num_bytes - len(buf))
@@ -133,15 +143,15 @@ class FramedSocket:
         except Exception as e:
             raise FramedSocketError("Error closing socket") from e
         
-    def settimeout(self, timeout: float | None):
-        try:
-            self._sock.settimeout(timeout)
-            self._timeout = timeout
-        except Exception as e:
-            raise FramedSocketError("Error setting socket timeout") from e
+    # def settimeout(self, timeout: float | None):
+    #     try:
+    #         self._sock.settimeout(timeout)
+    #         self._timeout = timeout
+    #     except Exception as e:
+    #         raise FramedSocketError("Error setting socket timeout") from e
 
-    def gettimeout(self) -> float | None:
-        return self._timeout
+    # def gettimeout(self) -> float | None:
+    #     return self._timeout
 
     def set_recv_timeout(self, timeout: float | None):
         """Set per-receive timeout without touching socket-level timeout.
@@ -152,3 +162,13 @@ class FramedSocket:
 
     def get_recv_timeout(self) -> float | None:
         return self._recv_timeout
+    
+    def set_send_timeout(self, timeout: float | None):
+        """Set per-send timeout without touching socket-level timeout.
+
+        使用 select 實作接收等待時間，避免影響 receive 行為。
+        """
+        self._send_timeout = timeout
+
+    def get_send_timeout(self) -> float | None:
+        return self._send_timeout

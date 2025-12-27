@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from typing import Callable, Optional
 
-class LobbyPage(ctk.CTkFrame):
+class LobbyView(ctk.CTkFrame):
     def __init__(self, master, logout_callback: Optional[Callable[[], None]] = None):
         super().__init__(master, width=800, height=550)
 

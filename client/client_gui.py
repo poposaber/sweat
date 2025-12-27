@@ -1,7 +1,7 @@
 import customtkinter
 from .client_controller import ClientController
-from .ui.login_page import LoginPage
-from .ui.lobby_page import LobbyPage
+from .ui.views.entry_view import EntryView
+from .ui.views.lobby_view import LobbyView
 from .client_state import ClientState
 
 class ClientGUI:
@@ -16,16 +16,18 @@ class ClientGUI:
         self.status_label.pack(pady=10)
 
         # Login page embedded
-        self.login_page = LoginPage(self._root, login_callback=self._on_login_submit)
-        # self.login_page.pack(pady=10)
+        self.entry_view = EntryView(self._root,
+                                    login_callback=self._on_login_submit,
+                                    register_callback=self._on_register_submit)
+        # self.entry_view.pack(pady=10)
 
-        self.lobby_page = LobbyPage(self._root, logout_callback=self.logout)
+        self.lobby_view = LobbyView(self._root, logout_callback=self.logout)
         # Initially hide lobby page
 
         self._state_dict = {
-            ClientState.DISCONNECTED: self.login_page, 
-            ClientState.LOGGED_OUT: self.login_page,
-            ClientState.IN_LOBBY: self.lobby_page
+            ClientState.DISCONNECTED: self.entry_view, 
+            ClientState.LOGGED_OUT: self.entry_view,
+            ClientState.IN_LOBBY: self.lobby_view
             }
 
         self._state = ClientState.DISCONNECTED
@@ -60,23 +62,49 @@ class ClientGUI:
         new_view.pack(pady=10)
         self._state = new_state
 
+    def _on_connected(self):
+        self._set_state(ClientState.LOGGED_OUT)
+        self.status_label.configure(text="Connected")
+
     def _auto_connect(self):
         self.status_label.configure(text="Connecting...")
         self._client_controller.connect(
-            on_result=lambda: self.status_label.configure(text="Connected"),
+            on_result=self._on_connected,
             on_error=lambda e: self.status_label.configure(text=f"Connect error: {e}"),
             on_disconnect=lambda: self.status_label.configure(text="Disconnected (Server closed)")
         )
 
-    def _on_login_submit(self, username: str, password: str):
+    def _on_login_submit(self, username: str, password: str, role: str):
         def ok():
-            self.status_label.configure(text="Logged In")
-            self.login_page.set_error("")
+            self.status_label.configure(text=f"Logged In as {role}")
+            self.entry_view.set_login_error("")
+            self.entry_view.set_register_error("")
             self._set_state(ClientState.IN_LOBBY)
         def ng(e: Exception):
             self.status_label.configure(text="Login failed")
-            self.login_page.set_error(str(e))
-        self._client_controller.login(username, password, on_result=ok, on_error=ng)
+            self.entry_view.set_login_error(str(e))
+            self.entry_view.set_register_error("")
+        self._client_controller.login(username, password, role, on_result=ok, on_error=ng)
+
+    def _on_register_submit(self, username: str, password: str, role: str):
+        def ok():
+            self.status_label.configure(text=f"Registered as {role}")
+            self.entry_view.set_login_error("")
+            self.entry_view.set_register_error("")
+            
+            # Sync role switch state from register page to login page
+            # Note: role is passed as string ('player' or 'developer')
+            if role == 'developer':
+                self.entry_view.login_page.role_switch.select()
+            else:
+                self.entry_view.login_page.role_switch.deselect()
+                
+            self.entry_view.show_reg_success()
+        def ng(e: Exception):
+            self.status_label.configure(text="Registration failed")
+            self.entry_view.set_login_error("")
+            self.entry_view.set_register_error(str(e))
+        self._client_controller.register(username, password, role, on_result=ok, on_error=ng)
 
     def logout(self):
         def ok():

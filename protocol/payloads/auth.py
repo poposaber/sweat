@@ -4,3 +4,4 @@ from dataclasses import dataclass
 class Credential:
     username: str
     password: str
+    role: str

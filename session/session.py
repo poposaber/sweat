@@ -31,7 +31,7 @@ class Session:
         try:
             data = encode_message(message)
             if self._trace_io:
-                logger.info("TX %s", data.decode("utf-8"))
+                logger.debug("TX %s", data.decode("utf-8"))
             self._fsock.send(data)
         except InteractionTimeoutError as e:
             raise SessionTimeoutError("send_message timed out") from e
@@ -44,7 +44,7 @@ class Session:
             data = self._fsock.receive()
             message = decode_message(data)
             if self._trace_io:
-                logger.info("RX %s", data.decode("utf-8"))
+                logger.debug("RX %s", data.decode("utf-8"))
             return message
         except InteractionTimeoutError as e:
             # 接收超時屬於「暫時無資料」，上層可選擇重試或忽略
@@ -102,23 +102,47 @@ class Session:
             # 不在下層記 exception，改由呼叫端/邊界統一記錄
             raise SessionError("close failed") from e
         
-    def settimeout(self, timeout: float | None):
-        """Set socket IO timeout.
+    # def settimeout(self, timeout: float | None):
+    #     """Set socket IO timeout.
 
-        若背景接收迴圈正在執行，為了維持可快速退出的短超時（例如 0.2s），
-        此處不會立刻更動底層 socket 的 timeout；而是記錄使用者期望值，
-        並在 `stop_recv_loop()` 時優先套用。這可避免把接收迴圈改回阻塞狀態。
+    #     若背景接收迴圈正在執行，為了維持可快速退出的短超時（例如 0.2s），
+    #     此處不會立刻更動底層 socket 的 timeout；而是記錄使用者期望值，
+    #     並在 `stop_recv_loop()` 時優先套用。這可避免把接收迴圈改回阻塞狀態。
+    #     """
+    #     if self.recv_message_thread is not None and self.recv_message_thread.is_alive():
+    #         self._user_timeout = timeout
+    #         logger.debug("settimeout deferred while recv loop running; will apply on stop: %s", timeout)
+    #         return
+    #     try:
+    #         self._fsock.settimeout(timeout)
+    #         self._user_timeout = None
+    #     except Exception as e:
+    #         # 不在下層記 exception，改由呼叫端/邊界統一記錄
+    #         raise SessionError("settimeout failed") from e
+
+    def set_send_timeout(self, timeout: float | None):
+        """Set per-send timeout without touching socket-level timeout.
+
+        使用 select 實作接收等待時間，避免影響 receive 行為。
+        """
+        self._fsock.set_send_timeout(timeout)
+
+    def get_send_timeout(self) -> float | None:
+        return self._fsock.get_send_timeout()
+    
+    def set_recv_timeout(self, timeout: float | None):
+        """Set per-receive timeout without touching socket-level timeout.
+
+        如果背景接收迴圈正在執行，只會紀錄使用者期望值，在 stop_recv_loop() 時優先套用。
         """
         if self.recv_message_thread is not None and self.recv_message_thread.is_alive():
-            self._user_timeout = timeout
-            logger.debug("settimeout deferred while recv loop running; will apply on stop: %s", timeout)
+            self._rxloop_prev_recv_timeout = timeout
+            logger.debug("set_recv_timeout deferred while recv loop running; will apply on stop: %s", timeout)
             return
-        try:
-            self._fsock.settimeout(timeout)
-            self._user_timeout = None
-        except Exception as e:
-            # 不在下層記 exception，改由呼叫端/邊界統一記錄
-            raise SessionError("settimeout failed") from e
+        self._fsock.set_recv_timeout(timeout)
+
+    def get_recv_timeout(self) -> float | None:
+        return self._fsock.get_recv_timeout()
     
     def poll_event(self) -> Message | None:
         """Retrieve one queued event message, if any."""
@@ -143,7 +167,7 @@ class Session:
         # 為了能在 stop 時快速退出阻塞的 recv，將接收設為短超時（不影響 send）
         try:
             # 儲存舊值並設為短接收超時（例如 0.2s）
-            self._rxloop_prev_timeout = self._fsock.gettimeout()
+            # self._rxloop_prev_timeout = self._fsock.gettimeout()
             self._rxloop_prev_recv_timeout = self._fsock.get_recv_timeout()
             self._fsock.set_recv_timeout(0.2)
         except Exception:
@@ -166,16 +190,16 @@ class Session:
             self.recv_message_thread = None
             # 恢復原本的 io timeout 或套用 deferred 使用者設定，並恢復接收超時
             try:
-                if self._user_timeout is not None:
-                    self._fsock.settimeout(self._user_timeout)
-                else:
-                    self._fsock.settimeout(self._rxloop_prev_timeout)
+                # if self._user_timeout is not None:
+                #     self._fsock.settimeout(self._user_timeout)
+                # else:
+                #     self._fsock.settimeout(self._rxloop_prev_timeout)
                 self._fsock.set_recv_timeout(self._rxloop_prev_recv_timeout)
             except Exception:
                 pass
             finally:
-                self._user_timeout = None
-                self._rxloop_prev_timeout = None
+                # self._user_timeout = None
+                # self._rxloop_prev_timeout = None
                 self._rxloop_prev_recv_timeout = None
 
     def _recv_loop(self) -> None:

@@ -36,6 +36,8 @@ def encode(message: Message) -> bytes:
         obj["msg_id"] = message.msg_id
     if message.ok is not None:
         obj["ok"] = message.ok
+    if message.error:
+        obj["error"] = message.error
 
     return json.dumps(obj).encode("utf-8")
 
@@ -57,4 +59,5 @@ def decode(data: bytes) -> Message:
         payload=payload,
         msg_id=obj.get("msg_id"),
         ok=obj.get("ok"),
+        error=obj.get("error"),
     )
