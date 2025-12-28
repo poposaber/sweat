@@ -4,3 +4,4 @@ class ClientState(Enum):
     DISCONNECTED = 0
     LOGGED_OUT = 1
     IN_LOBBY = 2
+    IN_DEVELOPMENT = 3

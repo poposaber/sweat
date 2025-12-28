@@ -18,6 +18,13 @@ class FramedSocket:
         self._send_timeout: float | None = None
         self._recv_timeout: float | None = None
 
+    @property
+    def peer_address(self) -> tuple[str, int] | None:
+        try:
+            return self._sock.getpeername()
+        except Exception:
+            return None
+
     def send(self, data: bytes):
         try:
             length_prefix = struct.pack('!I', len(data))

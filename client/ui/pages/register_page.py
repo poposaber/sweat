@@ -35,7 +35,7 @@ class RegisterPage(customtkinter.CTkFrame):
         self.reg_error_label.place(relx=0.5, rely=0.8, anchor=tkinter.CENTER)
 
         self.reg_btn = customtkinter.CTkButton(self, text="Register", width=100, height=40, command=self.register)
-        self.reg_btn.place(relx=0.5, rely=0.9, anchor=tkinter.CENTER)
+        self.reg_btn.place(relx=0.5, rely=0.85, anchor=tkinter.CENTER)
 
 
     def register(self):

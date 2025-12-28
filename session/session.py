@@ -27,6 +27,10 @@ class Session:
     def set_trace_io(self, enabled: bool) -> None:
         self._trace_io = bool(enabled)
 
+    @property
+    def peer_address(self) -> tuple[str, int] | None:
+        return self._fsock.peer_address
+
     def send_message(self, message: Message):
         try:
             data = encode_message(message)

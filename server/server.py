@@ -6,6 +6,7 @@ from session.session import Session
 from server.dispatcher import Dispatcher
 from session.errors import SessionDisconnectedError
 from server.infra.database import Database
+from server.infra.session_user_map import SessionUserMap
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +16,12 @@ class Server:
         self._addr = addr
         self._acceptor = Acceptor(addr)
         self._db = Database()
-        self._dispatcher = Dispatcher(self._db)
+        self._session_user_map = SessionUserMap()
+        self._dispatcher = Dispatcher(self._db, self._session_user_map)
         self._stop_event = threading.Event()
         self._threads: list[threading.Thread] = []
-        self._sessions: list[Session] = []
+        # self._sessions: list[Session] = []
+        
         self._trace_io = bool(trace_io)
 
     def serve(self):
@@ -39,7 +42,7 @@ class Server:
                 continue
             t = threading.Thread(target=self._client_loop, args=(session, addr), daemon=True)
             self._threads.append(t)
-            self._sessions.append(session)
+            self._session_user_map.add_session(session)
             t.start()
 
     def _client_loop(self, session: Session, addr: Optional[tuple[str, int]] = None):
@@ -48,7 +51,7 @@ class Server:
             while not self._stop_event.is_set():
                 try:
                     req = session.receive_message()
-                    resp = self._dispatcher.dispatch(req)
+                    resp = self._dispatcher.dispatch(req, session)
                     session.send_message(resp)
                 except Exception as e:
                     # 正常斷線：降低為 info，其他錯誤保留堆疊
@@ -59,11 +62,12 @@ class Server:
                             logger.info("Client disconnected")
                     else:
                         if addr:
-                            logger.exception(f"Client {addr[0]}:{addr[1]} handler error or disconnect")
+                            logger.exception(f"Client {addr[0]}:{addr[1]} handler error: {e}")
                         else:
-                            logger.exception("Client handler error or disconnect")
+                            logger.exception(f"Client handler error: {e}")
                     break
         finally:
+            self._session_user_map.remove_session(session)
             try:
                 session.close()
             except Exception:
@@ -79,12 +83,12 @@ class Server:
             self._acceptor.close()  # this should unblock accept
         except Exception:
             logger.exception("Error closing acceptor")
-        for session in list(self._sessions):
+        for session in self._session_user_map.get_all_sessions():
             try:
                 session.close()
             except Exception:
                 logger.exception("Error closing session")
-        self._sessions.clear()
+        self._session_user_map.clear_all()
         
         for t in list(self._threads):
             try:

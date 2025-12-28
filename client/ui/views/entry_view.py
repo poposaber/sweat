@@ -15,7 +15,7 @@ class EntryViewState(Enum):
 class EntryView(customtkinter.CTkFrame):
     def __init__(self, master, login_callback: Optional[Callable[[str, str, str], None]] = None,
                  register_callback: Optional[Callable[[str, str, str], None]] = None):
-        super().__init__(master, width=400, height=500)
+        super().__init__(master)
         
         self.login_page = LoginPage(self, login_callback=login_callback)
         self.login_page.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
@@ -40,9 +40,12 @@ class EntryView(customtkinter.CTkFrame):
             EntryViewState.REG_SUCCESS: self.reg_success_page
         }
 
+        self.geom_size = "350x450"
+
     def set_state(self, state: EntryViewState):
         if state not in self._page_dict:
             raise ValueError(f"Invalid state: {state}")
+        # print(f"Setting state to: {state}")
         for page in self._page_dict.values():
             page.place_forget()
         page_to_show = self._page_dict[state]
@@ -50,6 +53,10 @@ class EntryView(customtkinter.CTkFrame):
         self._state = state
     
     def swap(self):
+        # print(self._state)
+        self.login_page.reset()
+        self.register_page.reset()
+
         if self._state == EntryViewState.LOGIN:
             self.set_state(EntryViewState.REGISTER)
             self.set_to_login_prompt()
@@ -58,7 +65,6 @@ class EntryView(customtkinter.CTkFrame):
             self.set_state(EntryViewState.LOGIN)
             self.set_to_register_prompt()
             self.login_page.focus()
-        self.reset()
 
     def show_reg_success(self):
         self.set_state(EntryViewState.REG_SUCCESS)
@@ -89,3 +95,7 @@ class EntryView(customtkinter.CTkFrame):
     def reset(self):
         self.login_page.reset()
         self.register_page.reset()
+        self.set_state(EntryViewState.LOGIN)
+        self.set_to_register_prompt()
+        self.prompt_text.place(relx=0.65, rely=0.95, anchor=tkinter.CENTER)
+        self.swap_label.place(relx=0.9, rely=0.95, anchor=tkinter.CENTER)
