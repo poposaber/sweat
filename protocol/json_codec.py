@@ -1,15 +1,27 @@
 import json
+import base64
+import typing
 from dataclasses import is_dataclass, asdict
 from .message import Message
 from .enums import MessageType, Action
 from .errors import SchemaError
 from .payloads.auth import Credential
 from .payloads.common import EmptyPayload
+from .payloads.game import UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, UploadGameInitResponsePayload
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
     Action.REGISTER: Credential, 
-    Action.LOGOUT: EmptyPayload, 
+    Action.LOGOUT: EmptyPayload,
+    Action.UPLOAD_GAME_INIT: UploadGameInitPayload,
+    Action.UPLOAD_GAME_CHUNK: UploadGameChunkPayload,
+    Action.UPLOAD_GAME_FINISH: UploadGameFinishPayload,
+}
+
+_RESPONSE_PAYLOAD_MAP = {
+    Action.UPLOAD_GAME_INIT: UploadGameInitResponsePayload,
+    Action.UPLOAD_GAME_CHUNK: EmptyPayload,
+    Action.UPLOAD_GAME_FINISH: UploadGameFinishPayload,
 }
 
 def encode(message: Message) -> bytes:
@@ -39,7 +51,12 @@ def encode(message: Message) -> bytes:
     if message.error:
         obj["error"] = message.error
 
-    return json.dumps(obj).encode("utf-8")
+    def json_default(o):
+        if isinstance(o, bytes):
+            return base64.b64encode(o).decode('ascii')
+        raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
+
+    return json.dumps(obj, default=json_default).encode("utf-8")
 
 
 def decode(data: bytes) -> Message:
@@ -47,9 +64,27 @@ def decode(data: bytes) -> Message:
     obj = json.loads(data.decode("utf-8"))
     msg_type = MessageType(obj["type"])
     action = Action(obj["action"])
-    payload_cls = _PAYLOAD_MAP[action]
+    
+    if msg_type == MessageType.RESPONSE and action in _RESPONSE_PAYLOAD_MAP:
+        payload_cls = _RESPONSE_PAYLOAD_MAP[action]
+    else:
+        payload_cls = _PAYLOAD_MAP.get(action, EmptyPayload)
+
     try:
-        payload = payload_cls(**obj["payload"])
+        # Handle EmptyPayload special case (it has no fields)
+        if payload_cls is EmptyPayload:
+            payload = EmptyPayload()
+        else:
+            payload_dict = obj["payload"]
+            # Convert base64 strings back to bytes based on type hints
+            type_hints = typing.get_type_hints(payload_cls)
+            for field_name, field_type in type_hints.items():
+                if field_type == bytes and field_name in payload_dict:
+                    val = payload_dict[field_name]
+                    if isinstance(val, str):
+                        payload_dict[field_name] = base64.b64decode(val)
+            
+            payload = payload_cls(**payload_dict)
     except TypeError as e:
         raise SchemaError(f"Invalid payload schema for action {action}: {e}") from e
     

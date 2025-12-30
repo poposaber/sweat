@@ -1,7 +1,7 @@
 import logging
 from client.infra.connector import Connector
 from session.session import Session
-from client.api import auth
+from client.api import auth, game
 
 NORMAL_TIMEOUT = 3.0  # seconds
 
@@ -50,4 +50,9 @@ class Client:
         if self._session is None:
             raise RuntimeError("Client is not connected")
         return auth.register(self._session, username=username, password=password, role=role)
+
+    def upload_game(self, name: str, version: str, min_players: int, max_players: int, file_path: str, progress_callback=None):
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        return game.upload_game(self._session, name, version, min_players, max_players, file_path, progress_callback)
 

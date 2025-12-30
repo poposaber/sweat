@@ -1,8 +1,10 @@
 from protocol.enums import Action, MessageType
 from protocol.message import Message
 from server.handlers import auth as auth_handlers
+from server.handlers import game as game_handlers
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
+from server.infra.upload_manager import UploadManager
 from session.session import Session
 
 
@@ -10,6 +12,7 @@ class Dispatcher:
 	def __init__(self, db: Database, session_user_map: SessionUserMap):
 		self._db = db
 		self._session_user_map = session_user_map
+		self._upload_manager = UploadManager()
 
 	def dispatch(self, message: Message, session: Session) -> Message:
 		# Only handle requests; for non-request, echo payload and mark failed
@@ -21,16 +24,23 @@ class Dispatcher:
 				msg_id=message.msg_id,
 				ok=False,
 			)
-
-		if message.action == Action.LOGIN:
-			payload, ok, error = auth_handlers.handle_login(message.payload, self._db, self._session_user_map, session)
-		elif message.action == Action.REGISTER:
-			payload, ok, error = auth_handlers.handle_register(message.payload, self._db, session)
-		elif message.action == Action.LOGOUT:
-			payload, ok, error = auth_handlers.handle_logout(message.payload, self._session_user_map, session)
-		else:
-			# Unknown action: echo payload, mark failed
-			payload, ok, error = message.payload, False, "Unknown action"
+		
+		match message.action:
+			case Action.LOGIN:
+				payload, ok, error = auth_handlers.handle_login(message.payload, self._db, self._session_user_map, session)
+			case Action.REGISTER:
+				payload, ok, error = auth_handlers.handle_register(message.payload, self._db, session)
+			case Action.LOGOUT:
+				payload, ok, error = auth_handlers.handle_logout(message.payload, self._session_user_map, session)
+			case Action.UPLOAD_GAME_INIT:
+				payload, ok, error = game_handlers.handle_upload_init(message.payload, self._db, self._upload_manager, self._session_user_map, session)
+			case Action.UPLOAD_GAME_CHUNK:
+				payload, ok, error = game_handlers.handle_upload_chunk(message.payload, self._upload_manager, session)
+			case Action.UPLOAD_GAME_FINISH:
+				payload, ok, error = game_handlers.handle_upload_finish(message.payload, self._db, self._upload_manager, session)
+			case _:
+				# Unknown action: echo payload, mark failed
+				payload, ok, error = message.payload, False, "Unknown action"
 
 		return Message.response(
 			message.action,

@@ -45,6 +45,7 @@ class FramedSocket:
                 peer = self._sock.getpeername()
             except Exception:
                 peer = '<unknown>'
+            logger.debug("Send timed out to %s", peer)
             raise InteractionTimeoutError(f"Send timed out to {peer}") from e
         except OSError as e:
             peer = None
@@ -52,8 +53,10 @@ class FramedSocket:
                 peer = self._sock.getpeername()
             except Exception:
                 peer = '<unknown>'
+            logger.debug("OSError during send to %s: %s", peer, e)
             raise DataTransmissionError(f"Failed to send data to {peer}: {e}", cause=e, peer=str(peer)) from e
         except Exception as e:
+            logger.debug("Unexpected error during send: %s", e)
             raise FramedSocketError("Unexpected error in send()") from e
 
     def receive(self) -> bytes:

@@ -89,6 +89,45 @@ class ClientController:
                     else:
                         cb_err(e)
         threading.Thread(target=_work, daemon=True).start()
+
+    def upload_game(self, name: str, version: str, min_players: int, max_players: int, file_path: str,
+                    on_result: Optional[Callable[[], None]] = None,
+                    on_error: Optional[Callable[[str], None]] = None,
+                    on_progress: Optional[Callable[[int, int], None]] = None):
+        def _work():
+            try:
+                # We need to wrap on_progress to run on GUI thread if needed
+                safe_progress = None
+                if on_progress and self._gui:
+                    g = self._gui
+                    op = on_progress
+                    def _p(c, t):
+                        g.after(0, lambda: op(c, t))
+                    safe_progress = _p
+                else:
+                    safe_progress = on_progress
+
+                resp = self._client.upload_game(name, version, min_players, max_players, file_path, safe_progress)
+                if not resp.ok:
+                    raise Exception(resp.error or "Upload failed")
+                
+                if on_result:
+                    o_r = on_result
+                    if self._gui:
+                        self._gui.after(0, lambda: o_r())
+                    else:
+                        o_r()
+
+            except Exception as e:
+                if on_error:
+                    o_e = on_error
+                    err_msg = str(e)
+                    if self._gui:
+                        self._gui.after(0, lambda: o_e(err_msg))
+                    else:
+                        o_e(err_msg)
+        
+        threading.Thread(target=_work, daemon=True).start()
         
 
     def logout(self, on_result: Optional[Callable[[], None]] = None,

@@ -1,4 +1,5 @@
 import customtkinter
+from tkinter import messagebox
 from .client_controller import ClientController
 from .ui.views.entry_view import EntryView
 from .ui.views.lobby_view import LobbyView
@@ -26,7 +27,7 @@ class ClientGUI:
         self.lobby_view = LobbyView(self._root, logout_callback=self.logout)
         # Initially hide lobby page
 
-        self.developer_view = DeveloperView(self._root, logout_callback=self.logout)
+        self.developer_view = DeveloperView(self._root, logout_callback=self.logout, upload_callback=self._on_upload_submit)
 
         self._state_dict = {
             ClientState.DISCONNECTED: self.entry_view, 
@@ -54,6 +55,21 @@ class ClientGUI:
         self._root.protocol("WM_DELETE_WINDOW", self._on_close)
         # Auto-connect after GUI is constructed; controller should have GUI bound before mainloop runs
         self._root.after(0, self._auto_connect)
+
+    def _on_upload_submit(self, game_name: str, version: str, min_players: int, max_players: int, file_path: str):
+        def on_success():
+            messagebox.showinfo("Success", f"Game uploaded successfully!")
+            
+        def on_error(error_msg):
+            messagebox.showerror("Error", f"Upload failed: {error_msg}")
+
+        def on_progress(current, total):
+            print(f"Upload progress: {current}/{total}")
+
+        self._client_controller.upload_game(
+            game_name, version, min_players, max_players, file_path,
+            on_success, on_error, on_progress
+        )
 
     def _set_state(self, new_state: ClientState):
         if new_state not in self._state_dict:

@@ -31,3 +31,9 @@ poetry.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# .zip files
+*.zip
+
+#sweat.db
+sweat.db
