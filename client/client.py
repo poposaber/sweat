@@ -36,23 +36,42 @@ class Client:
             self._session.close()
             self._session = None
 
-    def login(self, username: str, password: str, role: str):
-        if self._session is None:
-            raise RuntimeError("Client is not connected")
-        return auth.login(self._session, username=username, password=password, role=role)
 
-    def logout(self):
+
+    def login(self, username: str, password: str, role: str) -> tuple[bool, str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
-        return auth.logout(self._session)
+        resp = auth.login(self._session, username=username, password=password, role=role)
+        assert resp.ok is not None
+        return resp.ok, resp.error
+
+    def logout(self) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = auth.logout(self._session)
+        assert resp.ok is not None
+        return resp.ok, resp.error
     
-    def register(self, username: str, password: str, role: str):
+    def register(self, username: str, password: str, role: str) -> tuple[bool, str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
-        return auth.register(self._session, username=username, password=password, role=role)
+        resp = auth.register(self._session, username=username, password=password, role=role)
+        assert resp.ok is not None
+        return resp.ok, resp.error
 
-    def upload_game(self, name: str, version: str, min_players: int, max_players: int, file_path: str, progress_callback=None):
+    def upload_game(self, name: str, version: str, min_players: int, max_players: int, file_path: str, progress_callback=None) -> tuple[bool, str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
-        return game.upload_game(self._session, name, version, min_players, max_players, file_path, progress_callback)
+        resp = game.upload_game(self._session, name, version, min_players, max_players, file_path, progress_callback)
+        assert resp.ok is not None
+        return resp.ok, resp.error
+    
+    def fetch_my_works(self) -> tuple[bool, list[tuple[str, str, int, int]] | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game.fetch_my_works(self._session)
+        if resp.ok:
+            return True, resp.payload.works
+        else:
+            return False, resp.error
 

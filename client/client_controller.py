@@ -47,9 +47,9 @@ class ClientController:
               on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
-                resp = self._client.login(username, password, role)
-                if not resp.ok:
-                    raise Exception(resp.error or "Login failed")
+                success, error = self._client.login(username, password, role)
+                if not success:
+                    raise Exception(error or "Login failed")
                 
                 cb_ok = on_result
                 if cb_ok:
@@ -71,9 +71,9 @@ class ClientController:
               on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
-                resp = self._client.register(username, password, role)
-                if not resp.ok:
-                    raise Exception(resp.error or "Registration failed")
+                success, error = self._client.register(username, password, role)
+                if not success:
+                    raise Exception(error or "Registration failed")
 
                 cb_ok = on_result
                 if cb_ok:
@@ -107,9 +107,9 @@ class ClientController:
                 else:
                     safe_progress = on_progress
 
-                resp = self._client.upload_game(name, version, min_players, max_players, file_path, safe_progress)
-                if not resp.ok:
-                    raise Exception(resp.error or "Upload failed")
+                success, error = self._client.upload_game(name, version, min_players, max_players, file_path, safe_progress)
+                if not success:
+                    raise Exception(error or "Upload failed")
                 
                 if on_result:
                     o_r = on_result
@@ -128,13 +128,38 @@ class ClientController:
                         o_e(err_msg)
         
         threading.Thread(target=_work, daemon=True).start()
-        
+
+    def fetch_my_works(self, on_result: Optional[Callable[[list[tuple[str, str, int, int]]], None]] = None, 
+                on_error: Optional[Callable[[Exception], None]] = None):
+          def _work():
+                try:
+                 success, result = self._client.fetch_my_works()
+                 if not success:
+                      raise Exception(result or "Fetch My Works failed")
+                 
+                 assert isinstance(result, list)
+                 cb_ok = on_result
+                 if cb_ok:
+                      if self._gui:
+                            self._gui.after(0, lambda: cb_ok(result))
+                      else:
+                            cb_ok(result)
+                except Exception as e:
+                 cb_err = on_error
+                 if cb_err:
+                      if self._gui:
+                            self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                      else:
+                            cb_err(e)
+          threading.Thread(target=_work, daemon=True).start()
 
     def logout(self, on_result: Optional[Callable[[], None]] = None,
                on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
-                self._client.logout()
+                success, error = self._client.logout()
+                if not success:
+                    raise Exception(error or "Logout failed")
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:

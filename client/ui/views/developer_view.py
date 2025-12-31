@@ -6,7 +6,10 @@ from ..pages.account_page import AccountPage
 from ..components.tabbar import TabBar
 
 class DeveloperView(ctk.CTkFrame):
-    def __init__(self, master, logout_callback: Optional[Callable[[], None]] = None, upload_callback: Optional[Callable[[str, str, int, int, str], None]] = None):
+    def __init__(self, master, 
+                 logout_callback: Optional[Callable[[], None]] = None, 
+                 upload_callback: Optional[Callable[[str, str, int, int, str], None]] = None, 
+                 my_works_callback: Optional[Callable[[], None]] = None):
         super().__init__(master)
 
         # ctk.CTkLabel(self, text="Developer View").place(relx=0.5, rely=0.3, anchor=ctk.CENTER)
@@ -14,7 +17,7 @@ class DeveloperView(ctk.CTkFrame):
         #     self, text="Logout",
         #     command=logout_callback
         # ).place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
-
+        self._my_works_callback = my_works_callback
         self.my_works_page = MyWorksPage(self)
         self.upload_page = UploadPage(self, on_upload_callback=upload_callback)
         self.account_page = AccountPage(self, logout_callback=logout_callback)
@@ -28,6 +31,14 @@ class DeveloperView(ctk.CTkFrame):
 
     def _on_tabbar_click(self, id: str):
         print(f"DeveloperView: Tab '{id}' clicked.")
+        if id == "my_works":
+            if self._my_works_callback:
+                self._my_works_callback()
 
     def reset(self):
         self.tab_bar.show("my_works")
+
+    def set_my_works(self, works: list[tuple[str, str, int, int]]):
+        self.my_works_page.clear_games()
+        for game_name, version, min_players, max_players in works:
+            self.my_works_page.add_game_row(game_name, version, min_players, max_players)

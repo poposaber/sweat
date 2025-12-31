@@ -154,28 +154,3 @@ class Database:
         except Exception as e:
             logger.error("Error updating game %s: %s", name, e)
             return False
-
-    # def get_user(self, username: str) -> Optional[tuple[str, str, str]]:
-    #     """Retrieve a user by username. Returns (username, password, role) or None."""
-    #     try:
-    #         with sqlite3.connect(self._db_path) as conn:
-    #             cursor = conn.cursor()
-    #             cursor.execute("SELECT username, password, role FROM users WHERE username = ?", (username,))
-    #             return cursor.fetchone()
-    #     except Exception as e:
-    #         logger.error("Error getting user %s: %s", username, e)
-    #         return None
-
-    # def create_user(self, username: str, password: str, role: str) -> bool:
-    #     """Create a new user. Returns True if successful, False if username exists."""
-    #     try:
-    #         with sqlite3.connect(self._db_path) as conn:
-    #             cursor = conn.cursor()
-    #             cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, password, role))
-    #             conn.commit()
-    #             return True
-    #     except sqlite3.IntegrityError:
-    #         return False
-    #     except Exception as e:
-    #         logger.error("Error creating user %s: %s", username, e)
-    #         return False

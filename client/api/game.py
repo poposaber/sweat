@@ -11,6 +11,7 @@ from protocol.payloads.game import (
     UploadGameFinishPayload,
     UploadGameInitResponsePayload
 )
+from protocol.payloads.common import EmptyPayload
 
 def upload_game(
     session: Session, 
@@ -89,4 +90,8 @@ def upload_game(
     # 4. Send Finish
     finish_payload = UploadGameFinishPayload(upload_id=upload_id)
     req = Message.request(Action.UPLOAD_GAME_FINISH, finish_payload)
+    return session.request_response(req)
+
+def fetch_my_works(session: Session) -> Message:
+    req = Message.request(Action.FETCH_MY_WORKS, EmptyPayload())
     return session.request_response(req)

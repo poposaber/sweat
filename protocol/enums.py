@@ -12,8 +12,8 @@ class Action(Enum):
     UPLOAD_GAME_INIT = 'game.upload_init'
     UPLOAD_GAME_CHUNK = 'game.upload_chunk'
     UPLOAD_GAME_FINISH = 'game.upload_finish'
-    UPLOAD_GAME_INIT_RESPONSE = 'game.upload_init_response'
     DOWNLOAD_GAME = 'game.download'
+    FETCH_MY_WORKS = 'game.fetch_my_works'
 
 class Role(Enum):
     PLAYER = 'player'

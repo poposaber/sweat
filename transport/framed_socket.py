@@ -7,6 +7,8 @@ from .errors import InteractionTimeoutError, FramedSocketError, DataTransmission
 
 logger = logging.getLogger(__name__)
 
+MAX_MESSAGE_SIZE = 100 * 1024 * 1024  # 100 MB
+
 class FramedSocket:
     """
     a tcp socket connector doing 4-byte length-prefixed messages
@@ -27,6 +29,8 @@ class FramedSocket:
 
     def send(self, data: bytes):
         try:
+            if len(data) > MAX_MESSAGE_SIZE:
+                raise DataTransmissionError(f"Message size {len(data)} exceeds maximum of {MAX_MESSAGE_SIZE} bytes")
             length_prefix = struct.pack('!I', len(data))
             if self._send_timeout is not None:
                 _, wlist, _ = select.select([], [self._sock], [], self._send_timeout)
@@ -71,6 +75,7 @@ class FramedSocket:
 
         if not length_prefix:
             raise DisconnectedError("Socket disconnected while reading length prefix")
+        
         message_length = struct.unpack('!I', length_prefix)[0]
         try:
             message = self._recv_exact(message_length)
@@ -86,6 +91,8 @@ class FramedSocket:
         return message
     
     def _recv_exact(self, num_bytes: int) -> bytes:
+        if num_bytes > MAX_MESSAGE_SIZE:
+            raise DataTransmissionError(f"Requested receive size {num_bytes} exceeds maximum of {MAX_MESSAGE_SIZE} bytes")
         buf = b''
         try:
             while len(buf) < num_bytes:

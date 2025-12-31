@@ -1,10 +1,12 @@
 import customtkinter
 from typing import Callable, Optional
 import tkinter
-from tkinter import simpledialog, messagebox
+from tkinter import messagebox
 from ..components.file_browser import FileBrowser
 from ..components.version_input import VersionInput
 from ..components.min_max_player_input import MinMaxPlayerInput
+from ..components.clickable_label import ClickableLabel
+import zipfile
 
 class UploadPage(customtkinter.CTkFrame):
     def __init__(self, master, on_upload_callback: Optional[Callable[[str, str, int, int, str], None]] = None):
@@ -13,6 +15,9 @@ class UploadPage(customtkinter.CTkFrame):
 
         self.label = customtkinter.CTkLabel(self, text="Upload Page", font=("Arial", 20))
         self.label.place(relx=0.5, rely=0.1, anchor=tkinter.CENTER)
+
+        self.rule_label = ClickableLabel(self, text="Upload Rules", font=("Arial", 12, "underline"), command=self.show_upload_rules)
+        self.rule_label.place(relx=0.95, rely=0.1, anchor=tkinter.E)
 
         self.name_label = customtkinter.CTkLabel(self, text="Game Name")
         self.name_label.place(relx=0.5, rely=0.2, anchor=tkinter.CENTER)
@@ -64,8 +69,66 @@ class UploadPage(customtkinter.CTkFrame):
         if not file_path:
             messagebox.showerror("Error", "Please select a file to upload.")
             return
+        
+        if not file_path.lower().endswith(".zip"):
+            messagebox.showerror("Error", "Only .zip files are allowed for upload.")
+            return
+        
+        # open the file. We check:
+        # 1. there is a client/__main__.py
+        # 2. there is a server/__main__.py
+        # 3. no other files than cover.png and description.txt and common/ folder
+        # 4. optional: cover.png (<=10MB), description.txt (<=1MB)
+
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            namelist = zip_ref.namelist()
+            if not any(name.startswith("client/") and name.endswith("__main__.py") for name in namelist):
+                messagebox.showerror("Error", "The zip file must contain client/__main__.py")
+                return
+            if not any(name.startswith("server/") and name.endswith("__main__.py") for name in namelist):
+                messagebox.showerror("Error", "The zip file must contain server/__main__.py")
+                return
+            
+            # Check for invalid files
+            allowed_files = {"cover.png", "description.txt"}
+            allowed_dirs = {"client/", "server/", "common/"}
+            for name in namelist:
+                if not any(name.startswith(dir_name) for dir_name in allowed_dirs) and name not in allowed_files:
+                    messagebox.showerror("Error", f"Invalid file or folder in zip: {name}")
+                    return
+                # Check size of optional files
+                if name == "cover.png":
+                    info = zip_ref.getinfo(name)
+                    if info.file_size > 10 * 1024 * 1024:
+                        messagebox.showerror("Error", "cover.png is too large. Max size is 10MB.")
+                        return
+                if name == "description.txt":
+                    info = zip_ref.getinfo(name)
+                    if info.file_size > 1 * 1024 * 1024:
+                        messagebox.showerror("Error", "description.txt is too large. Max size is 1MB.")
+                        return
 
         if self.on_upload_callback:
             self.on_upload_callback(game_name, version, min_players, max_players, file_path)
+
+    def show_upload_rules(self):
+        rules = (
+            "Upload Rules:\n"
+            "- Game name must be unique.\n"
+            "- Version must follow the Major.Minor.Patch format.\n"
+            "- Min players must be less than or equal to max players.\n"
+            "- Only .zip files are allowed for upload. You can only upload one file at a time.\n"
+            "- The structure of .zip file: \n"
+            "   xxx.zip\n"
+            "       client\n"
+            "           __main__.py\n"
+            "       server\n"
+            "           __main__.py\n"
+            "       common (optional)\n"
+            "       cover.png (optional, max size 10MB)\n"
+            "       description.txt (optional, max size 1MB)\n"
+            "- No other files or folders are allowed in the zip."
+        )
+        messagebox.showinfo("Upload Rules", rules)
 
         

@@ -7,7 +7,8 @@ from .enums import MessageType, Action
 from .errors import SchemaError
 from .payloads.auth import Credential
 from .payloads.common import EmptyPayload
-from .payloads.game import UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, UploadGameInitResponsePayload
+from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, 
+                            UploadGameInitResponsePayload, FetchMyWorksResponsePayload)
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
@@ -16,12 +17,13 @@ _PAYLOAD_MAP = {
     Action.UPLOAD_GAME_INIT: UploadGameInitPayload,
     Action.UPLOAD_GAME_CHUNK: UploadGameChunkPayload,
     Action.UPLOAD_GAME_FINISH: UploadGameFinishPayload,
+    Action.FETCH_MY_WORKS: EmptyPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {
     Action.UPLOAD_GAME_INIT: UploadGameInitResponsePayload,
     Action.UPLOAD_GAME_CHUNK: EmptyPayload,
-    Action.UPLOAD_GAME_FINISH: UploadGameFinishPayload,
+    Action.FETCH_MY_WORKS: FetchMyWorksResponsePayload,
 }
 
 def encode(message: Message) -> bytes:

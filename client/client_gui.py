@@ -15,9 +15,6 @@ class ClientGUI:
         self._root.title("Client GUI")
         self._root.geometry("350x450")
 
-        # self.status_label = customtkinter.CTkLabel(self._root, text="Disconnected", font=("Arial", 16))
-        # self.status_label.pack(pady=10)
-
         # Login page embedded
         self.entry_view = EntryView(self._root,
                                     login_callback=self._on_login_submit,
@@ -27,7 +24,10 @@ class ClientGUI:
         self.lobby_view = LobbyView(self._root, logout_callback=self.logout)
         # Initially hide lobby page
 
-        self.developer_view = DeveloperView(self._root, logout_callback=self.logout, upload_callback=self._on_upload_submit)
+        self.developer_view = DeveloperView(self._root, 
+                                            logout_callback=self.logout, 
+                                            upload_callback=self._on_upload_submit,
+                                            my_works_callback=self._on_my_works_click)
 
         self._state_dict = {
             ClientState.DISCONNECTED: self.entry_view, 
@@ -39,12 +39,6 @@ class ClientGUI:
         self._state = ClientState.DISCONNECTED
         
         self._set_state(self._state)
-
-        # self.logout_button = customtkinter.CTkButton(self._root, text="Logout", command=self.logout)
-        # self.logout_button.pack(pady=10)
-
-        # self.disconnect_button = customtkinter.CTkButton(self, text="Disconnect", command=self.disconnect)
-        # self.disconnect_button.pack(pady=10)
 
         # Optional: theme/appearance settings
         try:
@@ -112,6 +106,7 @@ class ClientGUI:
                 self._set_state(ClientState.IN_LOBBY)
             elif role == Role.DEVELOPER.value:
                 self._set_state(ClientState.IN_DEVELOPMENT)
+                self._on_my_works_click()
             else:
                 raise ValueError(f"Unknown role: {role}")
         def ng(e: Exception):
@@ -119,6 +114,14 @@ class ClientGUI:
             self.entry_view.set_login_error(str(e))
             self.entry_view.set_register_error("")
         self._client_controller.login(username, password, role, on_result=ok, on_error=ng)
+        
+
+    def _on_my_works_click(self):
+        def ok(works: list[tuple[str, str, int, int]]):
+            self.developer_view.set_my_works(works)
+        def ng(e: Exception):
+            messagebox.showerror("Error", f"Failed to fetch my works: {str(e)}")
+        self._client_controller.fetch_my_works(on_result=ok, on_error=ng)
 
     def _on_register_submit(self, username: str, password: str, role: str):
         def ok():
@@ -144,7 +147,9 @@ class ClientGUI:
         def ok():
             # self.status_label.configure(text="Logged Out")
             self._set_state(ClientState.LOGGED_OUT)
-        self._client_controller.logout(on_result=ok,)
+        def ng(e: Exception):
+            messagebox.showerror("Error", f"Logout failed: {str(e)}")
+        self._client_controller.logout(on_result=ok, on_error=ng)
         # self._set_state(ClientState.LOGGED_OUT)
 
     # def disconnect(self):

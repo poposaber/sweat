@@ -23,3 +23,7 @@ class UploadGameFinishPayload:
 class UploadGameInitResponsePayload:
     upload_id: str
     chunk_size: int
+
+@dataclass
+class FetchMyWorksResponsePayload:
+    works: list[tuple[str, str, int, int]] # (game_name, version, min_players, max_players)
