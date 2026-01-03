@@ -8,7 +8,8 @@ from .errors import SchemaError
 from .payloads.auth import Credential
 from .payloads.common import EmptyPayload
 from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, 
-                            UploadGameInitResponsePayload, FetchMyWorksResponsePayload)
+                            UploadGameInitResponsePayload, FetchMyWorksResponsePayload, 
+                            FetchGameCoverPayload, FetchGameCoverResponsePayload, FetchStorePayload, FetchStoreResponsePayload)
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
@@ -18,12 +19,16 @@ _PAYLOAD_MAP = {
     Action.UPLOAD_GAME_CHUNK: UploadGameChunkPayload,
     Action.UPLOAD_GAME_FINISH: UploadGameFinishPayload,
     Action.FETCH_MY_WORKS: EmptyPayload,
+    Action.FETCH_STORE: FetchStorePayload,
+    Action.FETCH_GAME_COVER: FetchGameCoverPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {
     Action.UPLOAD_GAME_INIT: UploadGameInitResponsePayload,
     Action.UPLOAD_GAME_CHUNK: EmptyPayload,
     Action.FETCH_MY_WORKS: FetchMyWorksResponsePayload,
+    Action.FETCH_STORE: FetchStoreResponsePayload,
+    Action.FETCH_GAME_COVER: FetchGameCoverResponsePayload,
 }
 
 def encode(message: Message) -> bytes:

@@ -129,6 +129,33 @@ class ClientController:
         
         threading.Thread(target=_work, daemon=True).start()
 
+    def fetch_store(self, page: int, page_size: int, 
+                    on_result: Optional[Callable[[list[tuple[str, str, int, int]], int], None]] = None, 
+                    on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.fetch_store(page, page_size)
+                if not success:
+                    raise Exception(result or "Fetch Store failed")
+                
+                assert isinstance(result, tuple)
+                games, total_count = result
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(games, total_count))
+                    else:
+                        cb_ok(games, total_count)
+            except Exception as e:
+                cb_err = on_error
+                if cb_err:
+                    if self._gui:
+                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                    else:
+                        cb_err(e)
+        threading.Thread(target=_work, daemon=True).start()
+
     def fetch_my_works(self, on_result: Optional[Callable[[list[tuple[str, str, int, int]]], None]] = None, 
                 on_error: Optional[Callable[[Exception], None]] = None):
           def _work():
@@ -152,6 +179,33 @@ class ClientController:
                       else:
                             cb_err(e)
           threading.Thread(target=_work, daemon=True).start()
+
+    def fetch_game_cover(self, game_name: str, 
+                         on_result: Optional[Callable[[bytes], None]] = None, 
+                         on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.fetch_game_cover(game_name)
+                if not success:
+                    # It's okay if cover is missing, just return empty bytes or handle gracefully
+                    # But here we treat failure as error if protocol failed
+                    raise Exception(result or "Fetch Game Cover failed")
+                
+                assert isinstance(result, bytes)
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(result))
+                    else:
+                        cb_ok(result)
+            except Exception as e:
+                cb_err = on_error
+                if cb_err:
+                    if self._gui:
+                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                    else:
+                        cb_err(e)
+        threading.Thread(target=_work, daemon=True).start()
 
     def logout(self, on_result: Optional[Callable[[], None]] = None,
                on_error: Optional[Callable[[Exception], None]] = None):

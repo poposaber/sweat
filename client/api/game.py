@@ -9,7 +9,9 @@ from protocol.payloads.game import (
     UploadGameInitPayload,
     UploadGameChunkPayload,
     UploadGameFinishPayload,
-    UploadGameInitResponsePayload
+    UploadGameInitResponsePayload, 
+    FetchStorePayload,
+    FetchGameCoverPayload
 )
 from protocol.payloads.common import EmptyPayload
 
@@ -94,4 +96,14 @@ def upload_game(
 
 def fetch_my_works(session: Session) -> Message:
     req = Message.request(Action.FETCH_MY_WORKS, EmptyPayload())
+    return session.request_response(req)
+
+def fetch_store(session: Session, page: int, page_size: int) -> Message:
+    payload = FetchStorePayload(page=page, page_size=page_size)
+    req = Message.request(Action.FETCH_STORE, payload)
+    return session.request_response(req)
+
+def fetch_game_cover(session: Session, game_name: str) -> Message:
+    payload = FetchGameCoverPayload(game_name=game_name)
+    req = Message.request(Action.FETCH_GAME_COVER, payload)
     return session.request_response(req)

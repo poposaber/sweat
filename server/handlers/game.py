@@ -10,7 +10,11 @@ from protocol.payloads.game import (
     UploadGameChunkPayload, 
     UploadGameFinishPayload, 
     UploadGameInitResponsePayload,
-    FetchMyWorksResponsePayload
+    FetchMyWorksResponsePayload,
+    FetchStorePayload,
+    FetchStoreResponsePayload, 
+    FetchGameCoverPayload,
+    FetchGameCoverResponsePayload
 )
 from protocol.enums import Role
 from protocol.payloads.common import EmptyPayload
@@ -323,3 +327,69 @@ def handle_fetch_my_works(
     # reduce to (name, version, min_players, max_players)
     games = [(name, version, min_players, max_players) for (name, _, version, min_players, max_players, _, _) in games]
     return FetchMyWorksResponsePayload(works=games), True, ""
+
+def handle_fetch_store(
+    payload: FetchStorePayload,
+    db: Database,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[FetchStoreResponsePayload, bool, str]:
+    # Any logged in user can fetch store
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return FetchStoreResponsePayload(games=[], total_count=0), False, "Unauthenticated session"
+    
+    role, username = user_info
+    if not username:
+        return FetchStoreResponsePayload(games=[], total_count=0), False, "Unauthorized"
+    
+    if role != Role.PLAYER:
+        return FetchStoreResponsePayload(games=[], total_count=0), False, "Role not permitted"
+    
+    games = db.get_all_games_paginated(payload.page, payload.page_size)
+    total_count = db.get_total_games_count()
+    # reduce to (name, version, min_players, max_players)
+    games = [(name, version, min_players, max_players) for (name, _, version, min_players, max_players, _, _) in games]
+    return FetchStoreResponsePayload(games=games, total_count=total_count), True, ""
+
+def handle_fetch_game_cover(
+    payload: FetchGameCoverPayload,
+    db: Database,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[FetchGameCoverResponsePayload, bool, str]:
+    
+    # 0. Auth check (any logged in user can fetch covers)
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Unauthenticated session"
+    
+    role, username = user_info
+    if not username:
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Unauthorized"
+    if role != Role.PLAYER:
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Role not permitted"
+    
+    # 1. Find the game to get its path
+    game = db.get_game(payload.game_name)
+    if not game:
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Game not found"
+    
+    # game structure: (name, developer, version, min, max, sha256, file_path)
+    # file_path points to "server/games/{uuid}"
+    game_dir = game[6]
+    cover_path = os.path.join(game_dir, "cover.png")
+    
+    # 2. Check if cover exists
+    if not os.path.exists(cover_path):
+        # Return empty bytes (client should show default icon)
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), True, ""
+    
+    # 3. Read and return image data
+    try:
+        with open(cover_path, "rb") as f:
+            data = f.read()
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=data), True, ""
+    except Exception as e:
+        logger.error(f"Error reading cover for {payload.game_name}: {e}")
+        return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Read error"

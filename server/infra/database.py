@@ -128,6 +128,40 @@ class Database:
             logger.error("Error getting game %s: %s", name, e)
             return None
         
+    def get_all_games(self) -> list[tuple[str, str, str, int, int, str, str]]:
+        """Retrieve all games. Returns a list of (name, developer, version, min_players, max_players, sha256, file_path)."""
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name, developer, version, min_players, max_players, sha256, file_path FROM games")
+                return cursor.fetchall()
+        except Exception as e:
+            logger.error("Error getting all games: %s", e)
+            return []
+
+    def get_all_games_paginated(self, page: int, page_size: int) -> list[tuple[str, str, str, int, int, str, str]]:
+        """Retrieve games for a specific page. Returns a list of (name, developer, version, min_players, max_players, sha256, file_path)."""
+        try:
+            offset = (page - 1) * page_size
+            with sqlite3.connect(self._db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name, developer, version, min_players, max_players, sha256, file_path FROM games LIMIT ? OFFSET ?", (page_size, offset))
+                return cursor.fetchall()
+        except Exception as e:
+            logger.error("Error getting paginated games: %s", e)
+            return []
+
+    def get_total_games_count(self) -> int:
+        """Retrieve the total number of games."""
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM games")
+                return cursor.fetchone()[0]
+        except Exception as e:
+            logger.error("Error getting total games count: %s", e)
+            return 0
+        
     def get_games_by_developer(self, developer: str) -> list[tuple[str, str, str, int, int, str, str]]:
         """Retrieve all games by a specific developer."""
         try:

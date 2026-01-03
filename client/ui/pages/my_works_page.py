@@ -18,8 +18,9 @@ class MyWorksPage(customtkinter.CTkFrame):
 
     def add_game_row(self, game_name: str, version: str, min_players: int, max_players: int, command: Optional[Callable[[], None]] = None):
         self._empty_label.place_forget()
-        row = DevelopedGameRow(self._row_container, game_name, version, min_players, max_players, command)
-        self._row_container.add_row(row)
+        # row = DevelopedGameRow(self._row_container, game_name, version, min_players, max_players, command)
+        # self._row_container.add_row(row)
+        self._row_container.add_row(DevelopedGameRow, game_name, version, min_players, max_players, command)
 
     def clear_games(self):
         self._row_container.clear_rows()

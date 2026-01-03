@@ -2,6 +2,7 @@ import logging
 from client.infra.connector import Connector
 from session.session import Session
 from client.api import auth, game
+from protocol.payloads import game as game_payloads
 
 NORMAL_TIMEOUT = 3.0  # seconds
 
@@ -71,7 +72,27 @@ class Client:
             raise RuntimeError("Client is not connected")
         resp = game.fetch_my_works(self._session)
         if resp.ok:
+            assert isinstance(resp.payload, game_payloads.FetchMyWorksResponsePayload)
             return True, resp.payload.works
         else:
             return False, resp.error
+        
+    def fetch_store(self, page: int, page_size: int) -> tuple[bool, tuple[list[tuple[str, str, int, int]], int] | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game.fetch_store(self._session, page, page_size)
+        if resp.ok:
+            assert isinstance(resp.payload, game_payloads.FetchStoreResponsePayload)
+            return True, (resp.payload.games, resp.payload.total_count)
+        else:
+            return False, resp.error
 
+    def fetch_game_cover(self, game_name: str) -> tuple[bool, bytes | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game.fetch_game_cover(self._session, game_name)
+        if resp.ok:
+            assert isinstance(resp.payload, game_payloads.FetchGameCoverResponsePayload)
+            return True, resp.payload.cover_data
+        else:
+            return False, resp.error

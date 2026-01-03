@@ -127,7 +127,8 @@ class UploadPage(customtkinter.CTkFrame):
             "       common (optional)\n"
             "       cover.png (optional, max size 10MB)\n"
             "       description.txt (optional, max size 1MB)\n"
-            "- No other files or folders are allowed in the zip."
+            "- No other files or folders are allowed in the root of the zip.\n"
+            "- For updating, upload a new version with the same game name."
         )
         messagebox.showinfo("Upload Rules", rules)
 

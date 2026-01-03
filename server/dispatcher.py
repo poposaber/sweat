@@ -40,6 +40,10 @@ class Dispatcher:
 				payload, ok, error = game_handlers.handle_upload_finish(message.payload, self._db, self._upload_manager, session)
 			case Action.FETCH_MY_WORKS:
 				payload, ok, error = game_handlers.handle_fetch_my_works(message.payload, self._db, self._session_user_map, session)
+			case Action.FETCH_STORE:
+				payload, ok, error = game_handlers.handle_fetch_store(message.payload, self._db, self._session_user_map, session)
+			case Action.FETCH_GAME_COVER:
+				payload, ok, error = game_handlers.handle_fetch_game_cover(message.payload, self._db, self._session_user_map, session)
 			case _:
 				# Unknown action: echo payload, mark failed
 				payload, ok, error = message.payload, False, "Unknown action"

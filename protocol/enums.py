@@ -14,6 +14,8 @@ class Action(Enum):
     UPLOAD_GAME_FINISH = 'game.upload_finish'
     DOWNLOAD_GAME = 'game.download'
     FETCH_MY_WORKS = 'game.fetch_my_works'
+    FETCH_STORE = 'game.fetch_store'
+    FETCH_GAME_COVER = 'game.fetch_cover'
 
 class Role(Enum):
     PLAYER = 'player'
