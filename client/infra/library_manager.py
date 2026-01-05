@@ -6,6 +6,8 @@ from typing import Dict, Optional, TypedDict
 class InstalledGame(TypedDict):
     version: str
     install_folder_name: str # will only save the folder path because where games_manifest.json saves will be the root path of games
+    min_players: int
+    max_players: int
 
 class LibraryManager:
     MANIFEST_FILENAME = "games_manifest.json"
@@ -19,6 +21,10 @@ class LibraryManager:
         os.makedirs(self.library_root, exist_ok=True)
         if not os.path.exists(self.manifest_path):
             self._save_manifest({})
+
+    def get_installed_games(self) -> dict[str, InstalledGame]:
+        return self._load_manifest()
+        
 
     def _load_manifest(self) -> Dict[str, InstalledGame]:
         try:
@@ -38,7 +44,7 @@ class LibraryManager:
     def is_game_installed(self, game_name: str) -> bool:
         return self.get_installed_game(game_name) is not None
 
-    def register_game(self, game_name: str, version: str, install_folder_name: str):
+    def register_game(self, game_name: str, version: str, min_players: int, max_players: int, install_folder_name: str):
         manifest = self._load_manifest()
         
         # Remove old version if exists
@@ -55,7 +61,9 @@ class LibraryManager:
 
         manifest[game_name] = {
             "version": version,
-            "install_folder_name": install_folder_name
+            "install_folder_name": install_folder_name,
+            "min_players": min_players,
+            "max_players": max_players
         }
         self._save_manifest(manifest)
 

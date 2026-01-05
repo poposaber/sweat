@@ -15,6 +15,9 @@ class ClientController:
         """Bind the GUI instance after construction to resolve init ordering."""
         self._gui = gui
 
+    def get_library_manager(self):
+        return self._client.get_library_manager()
+
     def connect(self, *, on_result: Optional[Callable[[], None]] = None, on_error: Optional[Callable[[Exception], None]] = None,
                 start_events: bool = True, on_event: Optional[Callable] = None, on_disconnect: Optional[Callable[[], None]] = None):
         

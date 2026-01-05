@@ -143,6 +143,8 @@ def download_game(
     total_size = init_resp.total_size
     sha256_expected = init_resp.sha256
     version = init_resp.version
+    min_players = init_resp.min_players
+    max_players = init_resp.max_players
     
     # 2. Receive Chunks
     dest_file_path = os.path.join(dest_file_root_path, f"{download_id}.zip")
@@ -201,7 +203,7 @@ def download_game(
         return Message.response(Action.DOWNLOAD_GAME_FINISH, None, ok=False, error=f"Unzip error: {e}")
     
     # 6. Register game and cleanup
-    library_manager.register_game(game_name, version, download_id)
+    library_manager.register_game(game_name, version, min_players, max_players, download_id)
 
     # Delete the zip file
     try:

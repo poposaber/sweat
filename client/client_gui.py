@@ -107,6 +107,7 @@ class ClientGUI:
             self.entry_view.set_login_error("")
             self.entry_view.set_register_error("")
             if role == Role.PLAYER.value:
+                self.lobby_view.set_library_manager(self._client_controller.get_library_manager())
                 self._set_state(ClientState.IN_LOBBY)
                 self.lobby_view.store_page.reset()
             elif role == Role.DEVELOPER.value:

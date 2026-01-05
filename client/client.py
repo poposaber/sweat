@@ -15,6 +15,7 @@ class Client:
         self._session: Session | None = None
         self._trace_io = bool(trace_io)
         self._username: str | None = None
+        self._library_manager: LibraryManager | None = None
 
     def connect(self, connect_timeout: float | None = None, on_event=None, on_disconnect=None):
         session = self._connector.connect(connect_timeout=connect_timeout)
@@ -42,9 +43,16 @@ class Client:
 
     def set_username(self, username: str) -> None:
         self._username = username
+        dest_folder_path = os.path.join("client", "games", username)
+        os.makedirs(dest_folder_path, exist_ok=True)
+        self._library_manager = LibraryManager(dest_folder_path)
 
     def clear_username(self) -> None:
         self._username = None
+        self._library_manager = None
+
+    def get_library_manager(self) -> LibraryManager | None:
+        return self._library_manager
 
     def get_username(self) -> str | None:
         return self._username
@@ -122,10 +130,14 @@ class Client:
             raise RuntimeError("Client is not connected")
         if self._username is None:
             raise RuntimeError("Username is not set in client")
-        dest_folder_path = os.path.join("client", "games", self._username)
+        # Use the persistent library manager
+        if self._library_manager is None:
+            raise RuntimeError("Library manager is not initialized")
+        
+        dest_folder_path = self._library_manager.library_root
         os.makedirs(dest_folder_path, exist_ok=True)
         
-        library_manager = LibraryManager(dest_folder_path)
-        resp = game.download_game(self._session, game_name, dest_folder_path, library_manager, progress_callback)
+        # library_manager = LibraryManager(dest_folder_path)
+        resp = game.download_game(self._session, game_name, dest_folder_path, self._library_manager, progress_callback)
         assert resp.ok is not None
         return resp.ok, resp.error

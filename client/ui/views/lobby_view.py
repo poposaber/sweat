@@ -6,17 +6,21 @@ from ..pages.my_room_page import MyRoomPage
 from ..pages.store_page import StorePage
 from ..pages.my_game_page import MyGamePage
 from ..pages.this_lobby_page import ThisLobbyPage
+from client.infra.library_manager import LibraryManager
 
 class LobbyView(ctk.CTkFrame):
     def __init__(self, master, logout_callback: Optional[Callable[[], None]] = None, 
                  fetch_store_callback: Optional[Callable[[int, int, Callable[[list[tuple[str, str, int, int]], int], None], Callable[[Exception], None]], None]] = None,
                  fetch_cover_callback: Optional[Callable[[str, Callable[[bytes], None], Callable[[Exception], None]], None]] = None, 
                  fetch_game_detail_callback: Optional[Callable[[str, Callable[[str, str, int, int, str], None], Callable[[Exception], None]], None]] = None, 
-                 download_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None], Callable[[int, int], None]], None]] = None):
+                 download_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None], Callable[[int, int], None]], None]] = None, 
+                 on_create_room_callback: Optional[Callable[[], None]] = None, 
+                 library_manager: Optional[LibraryManager] = None):
         super().__init__(master)
         self.store_page = StorePage(self, fetch_store_callback=fetch_store_callback, fetch_cover_callback=fetch_cover_callback, 
                                     fetch_game_detail_callback=fetch_game_detail_callback, download_callback=download_callback)
-        self.my_game_page = MyGamePage(self)
+        self.my_game_page = MyGamePage(self, library_manager=library_manager, fetch_game_detail_callback=fetch_game_detail_callback, 
+                                       download_callback=download_callback, on_create_room_callback=on_create_room_callback)
         self.this_lobby_page = ThisLobbyPage(self)
         self.my_room_page = MyRoomPage(self)
         self.account_page = AccountPage(self, logout_callback=logout_callback)
@@ -30,11 +34,17 @@ class LobbyView(ctk.CTkFrame):
 
         self.geom_size = "800x600"
 
+    def set_library_manager(self, library_manager: Optional[LibraryManager]):
+        self.my_game_page.set_library_manager(library_manager)
+
     def _on_tabbar_click(self, tab_id: str):
         print(f"Tab clicked: {tab_id}")
         if tab_id == "store":
             if self.store_page:
                 self.store_page.reset()
+        elif tab_id == "my_games":
+            if self.my_game_page:
+                self.my_game_page.refresh_games()
 
     # def set_store(self, games: list[tuple[str, str, int, int]]):
     #     self.store_page.game_block_container.set_blocks([

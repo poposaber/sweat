@@ -68,6 +68,8 @@ class DownloadGameInitPayload:
 class DownloadGameInitResponsePayload:
     download_id: str
     version: str
+    min_players: int
+    max_players: int
     total_size: int
     chunk_size: int
     total_chunks: int

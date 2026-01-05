@@ -467,36 +467,40 @@ def handle_download_game_init(
     # Any logged in user can download games
     user_info = session_user_map.get_user_by_session(session)
     if not user_info:
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Unauthenticated session"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Unauthenticated session"
     role, username = user_info
     if not username:
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Unauthorized"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Unauthorized"
     if role != Role.PLAYER:
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Role not permitted"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Role not permitted"
     
     # Fetch game from DB
     game = db.get_game(payload.game_name)
     if not game:
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Game name not found"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Game name not found"
     # game structure: (name, developer, version, min, max, client_zip_sha256, client_folder_sha256, file_path)
     game_dir = game[7]
     client_zip_path = os.path.join(game_dir, "client.zip")
     if not os.path.exists(client_zip_path):
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Game file not found"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Game file not found"
     
     download_id = download_manager.init_download(CHUNK_SIZE, client_zip_path)
     if not download_id:
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Download initialization failed"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Download initialization failed"
     
     total_size = download_manager.get_total_size(download_id)
     if total_size is None:
-        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Download size retrieval failed"
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, 0, 0, ""), False, "Download size retrieval failed"
     
     sha256 = game[5]
     version = game[2]
     total_chunks = download_manager.get_total_chunks(download_id) or 0
+    min_players = game[3]
+    max_players = game[4]
 
-    return DownloadGameInitResponsePayload(download_id, version, total_size, CHUNK_SIZE, total_chunks, sha256), True, ""
+    logger.info(f"Download init: {payload.game_name} ({total_size} bytes) by {username}, id={download_id}")
+
+    return DownloadGameInitResponsePayload(download_id, version, min_players, max_players, total_size, CHUNK_SIZE, total_chunks, sha256), True, ""
 
 def handle_download_game_chunk(
     payload: DownloadGameChunkPayload,
@@ -539,6 +543,8 @@ def handle_download_game_finish(
     success = download_manager.finish_download(payload.download_id)
     if not success:
         return DownloadGameFinishPayload(payload.download_id), False, "Invalid download ID"
+    
+    logger.info(f"Download finished: id={payload.download_id} by {username}")
     
     return DownloadGameFinishPayload(payload.download_id), True, ""
     
