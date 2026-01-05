@@ -3,6 +3,7 @@ from customtkinter import CTk
 from typing import Callable, Optional
 import threading
 import logging
+from protocol.enums import Role
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,8 @@ class ClientController:
                 cb_ok = on_result
                 if cb_ok:
                     self._client.set_username(username)
+                    if role == Role.PLAYER.value:
+                        self._client.set_library_manager_by_username(username)
                     if self._gui:
                         self._gui.after(0, cb_ok)
                     else:

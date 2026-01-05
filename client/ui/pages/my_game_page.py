@@ -27,6 +27,7 @@ class MyGamePage(customtkinter.CTkFrame):
         if not self._library_manager:
             self.game_row_container.clear_game_rows()
             return
+        self._library_manager.ensure_library_exists()
         installed_games = self._library_manager.get_installed_games()
         
         # 2. Clear existing rows (you might need to add a clear method to container)

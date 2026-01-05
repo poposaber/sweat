@@ -15,9 +15,9 @@ class LibraryManager:
     def __init__(self, library_root: str):
         self.library_root = library_root
         self.manifest_path = os.path.join(library_root, self.MANIFEST_FILENAME)
-        self._ensure_library_exists()
+        self.ensure_library_exists()
 
-    def _ensure_library_exists(self):
+    def ensure_library_exists(self):
         os.makedirs(self.library_root, exist_ok=True)
         if not os.path.exists(self.manifest_path):
             self._save_manifest({})

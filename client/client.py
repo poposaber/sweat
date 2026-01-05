@@ -43,8 +43,9 @@ class Client:
 
     def set_username(self, username: str) -> None:
         self._username = username
+
+    def set_library_manager_by_username(self, username: str) -> None:
         dest_folder_path = os.path.join("client", "games", username)
-        os.makedirs(dest_folder_path, exist_ok=True)
         self._library_manager = LibraryManager(dest_folder_path)
 
     def clear_username(self) -> None:
@@ -135,7 +136,7 @@ class Client:
             raise RuntimeError("Library manager is not initialized")
         
         dest_folder_path = self._library_manager.library_root
-        os.makedirs(dest_folder_path, exist_ok=True)
+        self._library_manager.ensure_library_exists()
         
         # library_manager = LibraryManager(dest_folder_path)
         resp = game.download_game(self._session, game_name, dest_folder_path, self._library_manager, progress_callback)
