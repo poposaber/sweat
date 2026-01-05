@@ -37,7 +37,8 @@ class Database:
                         version TEXT NOT NULL,
                         min_players INTEGER NOT NULL,
                         max_players INTEGER NOT NULL,
-                        sha256 TEXT NOT NULL,
+                        client_zip_sha256 TEXT NOT NULL,
+                        client_folder_sha256 TEXT NOT NULL,
                         file_path TEXT NOT NULL,
                         FOREIGN KEY(developer) REFERENCES developers(username)
                     )
@@ -97,15 +98,15 @@ class Database:
             logger.error("Error creating developer %s: %s", username, e)
             return False
         
-    def create_game(self, name: str, developer: str, version: str, min_players: int, max_players: int, sha256: str, file_path: str) -> bool:
+    def create_game(self, name: str, developer: str, version: str, min_players: int, max_players: int, client_zip_sha256: str, client_folder_sha256: str, file_path: str) -> bool:
         """Create a new game. Returns True if successful, False if game name exists."""
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO games (name, developer, version, min_players, max_players, sha256, file_path) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (name, developer, version, min_players, max_players, sha256, file_path))
+                    INSERT INTO games (name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path))
                 conn.commit()
                 return True
         except sqlite3.IntegrityError:
@@ -114,12 +115,12 @@ class Database:
             logger.error("Error creating game %s: %s", name, e)
             return False
         
-    def get_game(self, name: str) -> Optional[tuple[str, str, str, int, int, str, str]]:
-        """Retrieve a game by name. Returns (name, developer, version, min_players, max_players, sha256, file_path) or None."""
+    def get_game(self, name: str) -> Optional[tuple[str, str, str, int, int, str, str, str]]:
+        """Retrieve a game by name. Returns (name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path) or None."""
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT name, developer, version, min_players, max_players, sha256, file_path FROM games WHERE name = ?", (name,))
+                cursor.execute("SELECT name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path FROM games WHERE name = ?", (name,))
                 row = cursor.fetchone()
                 if row is None:
                     logger.info("Game %s not found", name)
@@ -128,24 +129,24 @@ class Database:
             logger.error("Error getting game %s: %s", name, e)
             return None
         
-    def get_all_games(self) -> list[tuple[str, str, str, int, int, str, str]]:
-        """Retrieve all games. Returns a list of (name, developer, version, min_players, max_players, sha256, file_path)."""
+    def get_all_games(self) -> list[tuple[str, str, str, int, int, str, str, str]]:
+        """Retrieve all games. Returns a list of (name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path)."""
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT name, developer, version, min_players, max_players, sha256, file_path FROM games")
+                cursor.execute("SELECT name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path FROM games")
                 return cursor.fetchall()
         except Exception as e:
             logger.error("Error getting all games: %s", e)
             return []
 
-    def get_all_games_paginated(self, page: int, page_size: int) -> list[tuple[str, str, str, int, int, str, str]]:
-        """Retrieve games for a specific page. Returns a list of (name, developer, version, min_players, max_players, sha256, file_path)."""
+    def get_all_games_paginated(self, page: int, page_size: int) -> list[tuple[str, str, str, int, int, str, str, str]]:
+        """Retrieve games for a specific page. Returns a list of (name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path)."""
         try:
             offset = (page - 1) * page_size
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT name, developer, version, min_players, max_players, sha256, file_path FROM games LIMIT ? OFFSET ?", (page_size, offset))
+                cursor.execute("SELECT name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path FROM games LIMIT ? OFFSET ?", (page_size, offset))
                 return cursor.fetchall()
         except Exception as e:
             logger.error("Error getting paginated games: %s", e)
@@ -162,27 +163,27 @@ class Database:
             logger.error("Error getting total games count: %s", e)
             return 0
         
-    def get_games_by_developer(self, developer: str) -> list[tuple[str, str, str, int, int, str, str]]:
+    def get_games_by_developer(self, developer: str) -> list[tuple[str, str, str, int, int, str, str, str]]:
         """Retrieve all games by a specific developer."""
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT name, developer, version, min_players, max_players, sha256, file_path FROM games WHERE developer = ?", (developer,))
+                cursor.execute("SELECT name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path FROM games WHERE developer = ?", (developer,))
                 return cursor.fetchall()
         except Exception as e:
             logger.error("Error getting games for developer %s: %s", developer, e)
             return []
         
-    def set_game(self, name: str, version: str, min_players: int, max_players: int, sha256: str, file_path: str) -> bool:
+    def set_game(self, name: str, version: str, min_players: int, max_players: int, client_zip_sha256: str, client_folder_sha256: str, file_path: str) -> bool:
         """Update an existing game's details. Returns True if successful, False otherwise."""
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     UPDATE games 
-                    SET version = ?, min_players = ?, max_players = ?, sha256 = ?, file_path = ? 
+                    SET version = ?, min_players = ?, max_players = ?, client_zip_sha256 = ?, client_folder_sha256 = ?, file_path = ? 
                     WHERE name = ?
-                """, (version, min_players, max_players, sha256, file_path, name))
+                """, (version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path, name))
                 conn.commit()
                 return cursor.rowcount > 0
         except Exception as e:

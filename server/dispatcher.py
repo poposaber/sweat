@@ -5,6 +5,7 @@ from server.handlers import game as game_handlers
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.upload_manager import UploadManager
+from server.infra.download_manager import DownloadManager
 from session.session import Session
 
 
@@ -13,6 +14,7 @@ class Dispatcher:
 		self._db = db
 		self._session_user_map = session_user_map
 		self._upload_manager = UploadManager()
+		self._download_manager = DownloadManager()
 
 	def dispatch(self, message: Message, session: Session) -> Message:
 		# Only handle requests; for non-request, echo payload and mark failed
@@ -44,6 +46,14 @@ class Dispatcher:
 				payload, ok, error = game_handlers.handle_fetch_store(message.payload, self._db, self._session_user_map, session)
 			case Action.FETCH_GAME_COVER:
 				payload, ok, error = game_handlers.handle_fetch_game_cover(message.payload, self._db, self._session_user_map, session)
+			case Action.FETCH_GAME_DETAIL:
+				payload, ok, error = game_handlers.handle_fetch_game_detail(message.payload, self._db, self._session_user_map, session)
+			case Action.DOWNLOAD_GAME_INIT:
+				payload, ok, error = game_handlers.handle_download_game_init(message.payload, self._db, self._download_manager, self._session_user_map, session)
+			case Action.DOWNLOAD_GAME_CHUNK:
+				payload, ok, error = game_handlers.handle_download_game_chunk(message.payload, self._download_manager, self._session_user_map, session)
+			case Action.DOWNLOAD_GAME_FINISH:
+				payload, ok, error = game_handlers.handle_download_game_finish(message.payload, self._download_manager, self._session_user_map, session)
 			case _:
 				# Unknown action: echo payload, mark failed
 				payload, ok, error = message.payload, False, "Unknown action"

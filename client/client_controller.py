@@ -53,6 +53,7 @@ class ClientController:
                 
                 cb_ok = on_result
                 if cb_ok:
+                    self._client.set_username(username)
                     if self._gui:
                         self._gui.after(0, cb_ok)
                     else:
@@ -207,6 +208,69 @@ class ClientController:
                         cb_err(e)
         threading.Thread(target=_work, daemon=True).start()
 
+    def fetch_game_detail(self, game_name: str, 
+                          on_result: Optional[Callable[[str, str, int, int, str], None]] = None, 
+                          on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.fetch_game_detail(game_name)
+                if not success:
+                    raise Exception(result or "Fetch Game Detail failed")
+                
+                assert isinstance(result, tuple)
+                developer, version, min_players, max_players, description = result
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(developer, version, min_players, max_players, description))
+                    else:
+                        cb_ok(developer, version, min_players, max_players, description)
+            except Exception as e:
+                cb_err = on_error
+                if cb_err:
+                    if self._gui:
+                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                    else:
+                        cb_err(e)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def download_game(self, game_name: str, 
+                      on_result: Optional[Callable[[], None]] = None,
+                      on_error: Optional[Callable[[Exception], None]] = None,
+                      on_progress: Optional[Callable[[int, int], None]] = None):
+        def _work():
+            try:
+                # We need to wrap on_progress to run on GUI thread if needed
+                safe_progress = None
+                if on_progress and self._gui:
+                    g = self._gui
+                    op = on_progress
+                    def _p(c, t):
+                        g.after(0, lambda: op(c, t))
+                    safe_progress = _p
+                else:
+                    safe_progress = on_progress
+
+                success, error = self._client.download_game(game_name, safe_progress)
+                if not success:
+                    raise Exception(error or "Download failed")
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
+            except Exception as e:
+                cb_err = on_error
+                if cb_err:
+                    if self._gui:
+                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                    else:
+                        cb_err(e)
+        threading.Thread(target=_work, daemon=True).start()
+
     def logout(self, on_result: Optional[Callable[[], None]] = None,
                on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
@@ -216,6 +280,7 @@ class ClientController:
                     raise Exception(error or "Logout failed")
                 cb_ok = on_result
                 if cb_ok:
+                    self._client.clear_username()
                     if self._gui:
                         self._gui.after(0, cb_ok)
                     else:

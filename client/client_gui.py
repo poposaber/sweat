@@ -23,7 +23,9 @@ class ClientGUI:
 
         self.lobby_view = LobbyView(self._root, logout_callback=self.logout, 
                                     fetch_store_callback=self._client_controller.fetch_store,
-                                    fetch_cover_callback=self._client_controller.fetch_game_cover)
+                                    fetch_cover_callback=self._client_controller.fetch_game_cover, 
+                                    fetch_game_detail_callback=self._client_controller.fetch_game_detail, 
+                                    download_callback=self._client_controller.download_game)
         # Initially hide lobby page
 
         self.developer_view = DeveloperView(self._root, 
@@ -106,7 +108,7 @@ class ClientGUI:
             self.entry_view.set_register_error("")
             if role == Role.PLAYER.value:
                 self._set_state(ClientState.IN_LOBBY)
-                self._on_store_click()
+                self.lobby_view.store_page.reset()
             elif role == Role.DEVELOPER.value:
                 self._set_state(ClientState.IN_DEVELOPMENT)
                 self._on_my_works_click()
@@ -118,8 +120,8 @@ class ClientGUI:
             self.entry_view.set_register_error("")
         self._client_controller.login(username, password, role, on_result=ok, on_error=ng)
 
-    def _on_store_click(self):
-        self.lobby_view.store_page.load_games()
+    # def _on_store_click(self):
+    #     self.lobby_view.store_page.game_list_slide.reset()
         
 
     def _on_my_works_click(self):

@@ -1,8 +1,10 @@
 import logging
 from client.infra.connector import Connector
+from client.infra.library_manager import LibraryManager
 from session.session import Session
 from client.api import auth, game
 from protocol.payloads import game as game_payloads
+import os
 
 NORMAL_TIMEOUT = 3.0  # seconds
 
@@ -12,6 +14,7 @@ class Client:
         self._connector = Connector(addr)
         self._session: Session | None = None
         self._trace_io = bool(trace_io)
+        self._username: str | None = None
 
     def connect(self, connect_timeout: float | None = None, on_event=None, on_disconnect=None):
         session = self._connector.connect(connect_timeout=connect_timeout)
@@ -37,7 +40,14 @@ class Client:
             self._session.close()
             self._session = None
 
+    def set_username(self, username: str) -> None:
+        self._username = username
 
+    def clear_username(self) -> None:
+        self._username = None
+
+    def get_username(self) -> str | None:
+        return self._username
 
     def login(self, username: str, password: str, role: str) -> tuple[bool, str | None]:
         if self._session is None:
@@ -96,3 +106,26 @@ class Client:
             return True, resp.payload.cover_data
         else:
             return False, resp.error
+        
+    def fetch_game_detail(self, game_name: str) -> tuple[bool, tuple[str, str, int, int, str] | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game.fetch_game_detail(self._session, game_name)
+        if resp.ok:
+            assert isinstance(resp.payload, game_payloads.FetchGameDetailResponsePayload)
+            return True, (resp.payload.developer, resp.payload.version, resp.payload.min_players, resp.payload.max_players, resp.payload.description)
+        else:
+            return False, resp.error
+        
+    def download_game(self, game_name: str, progress_callback=None) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        if self._username is None:
+            raise RuntimeError("Username is not set in client")
+        dest_folder_path = os.path.join("client", "games", self._username)
+        os.makedirs(dest_folder_path, exist_ok=True)
+        
+        library_manager = LibraryManager(dest_folder_path)
+        resp = game.download_game(self._session, game_name, dest_folder_path, library_manager, progress_callback)
+        assert resp.ok is not None
+        return resp.ok, resp.error

@@ -6,21 +6,21 @@ import shutil
 from typing import Tuple, Any
 
 from protocol.payloads.game import (
-    UploadGameInitPayload, 
+    UploadGameInitPayload, UploadGameInitResponsePayload, 
     UploadGameChunkPayload, 
     UploadGameFinishPayload, 
-    UploadGameInitResponsePayload,
     FetchMyWorksResponsePayload,
-    FetchStorePayload,
-    FetchStoreResponsePayload, 
-    FetchGameCoverPayload,
-    FetchGameCoverResponsePayload
+    FetchStorePayload, FetchStoreResponsePayload, 
+    FetchGameCoverPayload, FetchGameCoverResponsePayload,
+    FetchGameDetailPayload, FetchGameDetailResponsePayload, 
+    DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload
 )
 from protocol.enums import Role
 from protocol.payloads.common import EmptyPayload
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.upload_manager import UploadManager
+from server.infra.download_manager import DownloadManager
 from session.session import Session
 from common.game_version import GameVersion
 from pathlib import Path
@@ -58,7 +58,7 @@ def handle_upload_init(
     existing_game = db.get_game(payload.name)
     if existing_game:
         # treat as update, check developer matches, version greater than existing
-        _, existing_developer, existing_version, _, _, _, _ = existing_game
+        _, existing_developer, existing_version, _, _, _, _, _ = existing_game
         if existing_developer != username:
             return UploadGameInitResponsePayload(upload_id="", chunk_size=CHUNK_SIZE), False, "Cannot update game owned by another developer"
         
@@ -192,6 +192,24 @@ def handle_upload_finish(
                     raise ValueError("description.txt is too large. Max size is 1MB.")
                 shutil.move(str(desc_src), desc_path)
 
+            # Calculate SHA256 of the generated client folder (contains client/ and common/) for the database
+            client_folder_hash = hashlib.sha256()
+            for root, _, files in os.walk(client_folder):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    with open(file_path, "rb") as f:
+                        for byte_block in iter(lambda: f.read(4096), b""):
+                            client_folder_hash.update(byte_block)
+
+            if common_folder.exists():
+                for root, _, files in os.walk(common_folder):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        with open(file_path, "rb") as f:
+                            for byte_block in iter(lambda: f.read(4096), b""):
+                                client_folder_hash.update(byte_block)
+            final_db_client_folder_sha256 = client_folder_hash.hexdigest()
+
             # Helper function to create the target zips
             def create_target_zip(target_path: str, source_folder: Path, common_folder: Path):
                 with zipfile.ZipFile(target_path, 'w', zipfile.ZIP_DEFLATED) as z:
@@ -218,6 +236,15 @@ def handle_upload_finish(
             # 5. Create server zip
             create_target_zip(server_zip_path, server_folder, common_folder)
 
+            # --- NEW CODE START ---
+            # Calculate SHA256 of the generated client.zip for the database
+            client_hash = hashlib.sha256()
+            with open(client_zip_path, "rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    client_hash.update(byte_block)
+            final_db_client_zip_sha256 = client_hash.hexdigest()
+            # --- NEW CODE END ---
+
         except Exception as e:
             logger.error(f"Error processing uploaded zip for {state.game_name}: {e}")
             # Cleanup created directory on error
@@ -242,10 +269,10 @@ def handle_upload_finish(
 
         existing_game = db.get_game(state.game_name)
         if existing_game:
-            # existing_game: (name, developer, version, min_players, max_players, sha256, file_path)
+            # existing_game: (name, developer, version, min_players, max_players, client_zip_sha256, client_folder_sha256, file_path)
             existing_developer = existing_game[1]
             existing_version_str = existing_game[2]
-            old_file_path = existing_game[6]
+            old_file_path = existing_game[7]
 
             if existing_developer != state.username:
                 shutil.rmtree(game_dir, ignore_errors=True)
@@ -265,19 +292,14 @@ def handle_upload_finish(
             if os.path.exists(old_file_path):
                 if os.path.isdir(old_file_path):
                     shutil.rmtree(old_file_path, ignore_errors=True)
-                # else:
-                #     # It might be the old zip files (legacy)
-                #     if os.path.exists(old_file_path + "_client.zip"):
-                #         os.remove(old_file_path + "_client.zip")
-                #     if os.path.exists(old_file_path + "_server.zip"):
-                #         os.remove(old_file_path + "_server.zip")
 
             success = db.set_game(
                 name=state.game_name,
                 version=state.version,
                 min_players=state.min_players,
                 max_players=state.max_players,
-                sha256=state.sha256,
+                client_zip_sha256=final_db_client_zip_sha256,
+                client_folder_sha256=final_db_client_folder_sha256,
                 file_path=db_file_path
             )
         else:
@@ -287,7 +309,8 @@ def handle_upload_finish(
                 version=state.version,
                 min_players=state.min_players,
                 max_players=state.max_players,
-                sha256=state.sha256,
+                client_zip_sha256=final_db_client_zip_sha256,
+                client_folder_sha256=final_db_client_folder_sha256,
                 file_path=db_file_path
             )
             
@@ -325,7 +348,7 @@ def handle_fetch_my_works(
         return FetchMyWorksResponsePayload(works=[]), False, "Unauthorized"
     games = db.get_games_by_developer(username)
     # reduce to (name, version, min_players, max_players)
-    games = [(name, version, min_players, max_players) for (name, _, version, min_players, max_players, _, _) in games]
+    games = [(name, version, min_players, max_players) for (name, _, version, min_players, max_players, _, _, _) in games]
     return FetchMyWorksResponsePayload(works=games), True, ""
 
 def handle_fetch_store(
@@ -349,7 +372,7 @@ def handle_fetch_store(
     games = db.get_all_games_paginated(payload.page, payload.page_size)
     total_count = db.get_total_games_count()
     # reduce to (name, version, min_players, max_players)
-    games = [(name, version, min_players, max_players) for (name, _, version, min_players, max_players, _, _) in games]
+    games = [(name, version, min_players, max_players) for (name, _, version, min_players, max_players, _, _, _) in games]
     return FetchStoreResponsePayload(games=games, total_count=total_count), True, ""
 
 def handle_fetch_game_cover(
@@ -375,9 +398,9 @@ def handle_fetch_game_cover(
     if not game:
         return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Game not found"
     
-    # game structure: (name, developer, version, min, max, sha256, file_path)
+    # game structure: (name, developer, version, min, max, client_zip_sha256, client_folder_sha256, file_path)
     # file_path points to "server/games/{uuid}"
-    game_dir = game[6]
+    game_dir = game[7]
     cover_path = os.path.join(game_dir, "cover.png")
     
     # 2. Check if cover exists
@@ -393,3 +416,129 @@ def handle_fetch_game_cover(
     except Exception as e:
         logger.error(f"Error reading cover for {payload.game_name}: {e}")
         return FetchGameCoverResponsePayload(game_name=payload.game_name, cover_data=b""), False, "Read error"
+    
+def handle_fetch_game_detail(
+    payload: FetchGameDetailPayload,
+    db: Database,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[FetchGameDetailResponsePayload, bool, str]:
+    # Any logged in user can fetch game details
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return FetchGameDetailResponsePayload(payload.game_name, "", "", 0, 0, ""), False, "Unauthenticated session"
+    
+    role, username = user_info
+    if not username:
+        return FetchGameDetailResponsePayload(payload.game_name, "", "", 0, 0, ""), False, "Unauthorized"
+    
+    if role != Role.PLAYER:
+        return FetchGameDetailResponsePayload(payload.game_name, "", "", 0, 0, ""), False, "Role not permitted"
+    
+    # Fetch game from DB
+    game = db.get_game(payload.game_name)
+    if not game:
+        return FetchGameDetailResponsePayload(payload.game_name, "", "", 0, 0, ""), False, "Game not found"
+    
+    # game structure: (name, developer, version, min, max, client_zip_sha256, client_folder_sha256, file_path)
+    # use file_path to find description.txt
+    game_dir = game[7]
+    desc_path = os.path.join(game_dir, "description.txt")
+    description = ""
+    if os.path.exists(desc_path):
+        try:
+            with open(desc_path, "r", encoding="utf-8") as f:
+                description = f.read()
+        except Exception as e:
+            logger.error(f"Error reading description for {payload.game_name}: {e}")
+            return FetchGameDetailResponsePayload(payload.game_name, "", "", 0, 0, ""), False, "Read error"
+    
+    name, developer, version, min_players, max_players, _, _, _ = game
+    
+    return FetchGameDetailResponsePayload(payload.game_name, developer, version, min_players, max_players, description), True, ""
+
+def handle_download_game_init(
+    payload: DownloadGameInitPayload,
+    db: Database,
+    download_manager: DownloadManager,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[DownloadGameInitResponsePayload, bool, str]:
+    # Any logged in user can download games
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Unauthenticated session"
+    role, username = user_info
+    if not username:
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Unauthorized"
+    if role != Role.PLAYER:
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Role not permitted"
+    
+    # Fetch game from DB
+    game = db.get_game(payload.game_name)
+    if not game:
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Game name not found"
+    # game structure: (name, developer, version, min, max, client_zip_sha256, client_folder_sha256, file_path)
+    game_dir = game[7]
+    client_zip_path = os.path.join(game_dir, "client.zip")
+    if not os.path.exists(client_zip_path):
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Game file not found"
+    
+    download_id = download_manager.init_download(CHUNK_SIZE, client_zip_path)
+    if not download_id:
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Download initialization failed"
+    
+    total_size = download_manager.get_total_size(download_id)
+    if total_size is None:
+        return DownloadGameInitResponsePayload("", "", 0, 0, 0, ""), False, "Download size retrieval failed"
+    
+    sha256 = game[5]
+    version = game[2]
+    total_chunks = download_manager.get_total_chunks(download_id) or 0
+
+    return DownloadGameInitResponsePayload(download_id, version, total_size, CHUNK_SIZE, total_chunks, sha256), True, ""
+
+def handle_download_game_chunk(
+    payload: DownloadGameChunkPayload,
+    download_manager: DownloadManager,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[DownloadGameChunkResponsePayload, bool, str]:
+    # Any logged in player can download games
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return DownloadGameChunkResponsePayload(payload.download_id, payload.chunk_index, b""), False, "Unauthenticated session"
+    role, username = user_info
+    if not username:
+        return DownloadGameChunkResponsePayload(payload.download_id, payload.chunk_index, b""), False, "Unauthorized"
+    if role != Role.PLAYER:
+        return DownloadGameChunkResponsePayload(payload.download_id, payload.chunk_index, b""), False, "Role not permitted"
+    
+    chunk_data = download_manager.get_chunk(payload.download_id, payload.chunk_index)
+    if chunk_data is None:
+        return DownloadGameChunkResponsePayload(payload.download_id, payload.chunk_index, b""), False, "Invalid download ID or offset"
+    
+    return DownloadGameChunkResponsePayload(payload.download_id, payload.chunk_index, chunk_data), True, ""
+
+def handle_download_game_finish(
+    payload: DownloadGameFinishPayload,
+    download_manager: DownloadManager,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[DownloadGameFinishPayload, bool, str]:
+    # Any logged in player can finish downloads
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return DownloadGameFinishPayload(payload.download_id), False, "Unauthenticated session"
+    role, username = user_info
+    if not username:
+        return DownloadGameFinishPayload(payload.download_id), False, "Unauthorized"
+    if role != Role.PLAYER:
+        return DownloadGameFinishPayload(payload.download_id), False, "Role not permitted"
+    
+    success = download_manager.finish_download(payload.download_id)
+    if not success:
+        return DownloadGameFinishPayload(payload.download_id), False, "Invalid download ID"
+    
+    return DownloadGameFinishPayload(payload.download_id), True, ""
+    

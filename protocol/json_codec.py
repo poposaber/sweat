@@ -7,9 +7,12 @@ from .enums import MessageType, Action
 from .errors import SchemaError
 from .payloads.auth import Credential
 from .payloads.common import EmptyPayload
-from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, 
-                            UploadGameInitResponsePayload, FetchMyWorksResponsePayload, 
-                            FetchGameCoverPayload, FetchGameCoverResponsePayload, FetchStorePayload, FetchStoreResponsePayload)
+from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, UploadGameInitResponsePayload, 
+                            FetchMyWorksResponsePayload, 
+                            FetchGameCoverPayload, FetchGameCoverResponsePayload, 
+                            FetchStorePayload, FetchStoreResponsePayload, 
+                            FetchGameDetailPayload, FetchGameDetailResponsePayload, 
+                            DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload)
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
@@ -21,6 +24,10 @@ _PAYLOAD_MAP = {
     Action.FETCH_MY_WORKS: EmptyPayload,
     Action.FETCH_STORE: FetchStorePayload,
     Action.FETCH_GAME_COVER: FetchGameCoverPayload,
+    Action.FETCH_GAME_DETAIL: FetchGameDetailPayload,
+    Action.DOWNLOAD_GAME_INIT: DownloadGameInitPayload,
+    Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkPayload,
+    Action.DOWNLOAD_GAME_FINISH: DownloadGameFinishPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {
@@ -29,6 +36,9 @@ _RESPONSE_PAYLOAD_MAP = {
     Action.FETCH_MY_WORKS: FetchMyWorksResponsePayload,
     Action.FETCH_STORE: FetchStoreResponsePayload,
     Action.FETCH_GAME_COVER: FetchGameCoverResponsePayload,
+    Action.FETCH_GAME_DETAIL: FetchGameDetailResponsePayload,
+    Action.DOWNLOAD_GAME_INIT: DownloadGameInitResponsePayload,
+    Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkResponsePayload,
 }
 
 def encode(message: Message) -> bytes:

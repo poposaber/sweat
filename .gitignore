@@ -35,5 +35,9 @@ Thumbs.db
 # .zip files
 *.zip
 
-#sweat.db
+# sweat.db
 sweat.db
+
+# game files
+server/games
+client/games

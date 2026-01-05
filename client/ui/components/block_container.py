@@ -8,6 +8,7 @@ class BlockContainer(customtkinter.CTkScrollableFrame):
         self._columns = columns
         self._current_column = 0
         self.grid_columnconfigure(tuple(range(columns)), weight=1, uniform="columns")
+        # self.grid_rowconfigure(0, weight=1, minsize=1000)  # Ensure enough height for scrolling
 
     def add_block(self, widget_or_class, *args, **kwargs):
         """
