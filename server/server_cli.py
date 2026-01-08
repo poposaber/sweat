@@ -16,12 +16,12 @@ class ServerCLI:
                 cmd = input("Enter 'quit' to stop, 'status' to check: ").strip().lower()
                 if cmd in ("quit", "exit", "q"):
                     break
-                elif cmd == "status":
-                    print("Server is running...")
+                elif cmd == "roomstatus":
+                    self._server.output_room_manager_status()
                 elif cmd == "":
                     continue
                 else:
-                    print("Unknown command. Type 'status' or 'quit'.")
+                    print("Unknown command. Type 'roomstatus' or 'quit'.")
         except KeyboardInterrupt:
             print("\nStopping server...")
         finally:

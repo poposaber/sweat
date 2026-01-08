@@ -25,7 +25,9 @@ class ClientGUI:
                                     fetch_store_callback=self._client_controller.fetch_store,
                                     fetch_cover_callback=self._client_controller.fetch_game_cover, 
                                     fetch_game_detail_callback=self._client_controller.fetch_game_detail, 
-                                    download_callback=self._client_controller.download_game)
+                                    download_callback=self._client_controller.download_game, 
+                                    create_room_callback=self._client_controller.create_room, 
+                                    check_my_room_callback=self._client_controller.check_my_room)
         # Initially hide lobby page
 
         self.developer_view = DeveloperView(self._root, 

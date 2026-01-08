@@ -1,15 +1,58 @@
 import customtkinter
 from typing import Callable, Optional
+from ..slides.my_room_detail_slide import MyRoomDetailSlide
+from tkinter import messagebox
+
 
 class MyRoomPage(customtkinter.CTkFrame):
-    def __init__(self, master, on_join_callback: Optional[Callable[[str], None]] = None):
+    def __init__(self, master, 
+                 check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str]], None], Callable[[Exception], None]], None]] = None, 
+                 leave_room_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None, 
+                 start_game_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master)
+        self._check_my_room_callback = check_my_room_callback
+        self._leave_room_callback = leave_room_callback
+        self._start_game_callback = start_game_callback
+        self.not_in_room_label = customtkinter.CTkLabel(self, text="You are not in a room!", font=("Arial", 20))
+        self.not_in_room_label.place(relx=0.5, rely=0.3, anchor=customtkinter.CENTER)
+        self.my_room_detail_slide = MyRoomDetailSlide(self, on_leave_callback=self.on_leave_room_click, start_game_callback=self._start_game_callback)
 
-        self.label = customtkinter.CTkLabel(self, text="Room Page", font=("Arial", 20))
-        self.label.place(relx=0.5, rely=0.3, anchor=customtkinter.CENTER)
+    def update_room_status(self):
+        if self._check_my_room_callback:
+            self._check_my_room_callback(
+                self._on_check_my_room_success,
+                self._on_error
+            )
+    
+    def switch_to_room(self, room_id: str, game_name: str):
+        self.not_in_room_label.place_forget()
+        self.my_room_detail_slide.place(relx=0.5, rely=0.5, relwidth=1, relheight=1, anchor=customtkinter.CENTER)
+        self.my_room_detail_slide.set_game_name(game_name)
+        self.my_room_detail_slide.set_room_id(room_id)
 
-        # self.join_button = customtkinter.CTkButton(
-        #     self, text="Join Room",
-        #     command=lambda: on_join_callback("SampleRoom") if on_join_callback else None
-        # )
-        # self.join_button.place(relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
+    def switch_to_no_room(self):
+        self.my_room_detail_slide.place_forget()
+        self.not_in_room_label.place(relx=0.5, rely=0.3, anchor=customtkinter.CENTER)
+
+    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, players: list[str]):
+        if in_room:
+            self.switch_to_room(room_id, game_name)
+            self.my_room_detail_slide.clear_players()
+            for player_name in players:
+                self.my_room_detail_slide.add_player(player_name, is_host=(player_name == host))
+        else:
+            self.switch_to_no_room()
+    
+    def _on_leave_room_success(self):
+        self.switch_to_no_room()
+
+    def _on_error(self, error: Exception):
+        messagebox.showerror("Error", str(error))
+
+    def on_leave_room_click(self):
+        if self._leave_room_callback:
+            self._leave_room_callback(
+                self.my_room_detail_slide.get_room_id(),
+                self._on_leave_room_success,
+                self._on_error
+            )

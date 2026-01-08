@@ -18,6 +18,14 @@ class ClientController:
 
     def get_library_manager(self):
         return self._client.get_library_manager()
+    
+    def _on_exception(self, e: Exception, on_error: Optional[Callable[[Exception], None]] = None):
+        logger.exception(f"ClientController exception: {str(e)}")
+        if on_error:
+            if self._gui:
+                self._gui.after(0, lambda err=e, cb=on_error: cb(err))
+            else:
+                on_error(e)
 
     def connect(self, *, on_result: Optional[Callable[[], None]] = None, on_error: Optional[Callable[[Exception], None]] = None,
                 start_events: bool = True, on_event: Optional[Callable] = None, on_disconnect: Optional[Callable[[], None]] = None):
@@ -38,12 +46,7 @@ class ClientController:
                     else:
                         cb_ok()
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def login(self, username: str, password: str, role: str,
@@ -65,12 +68,7 @@ class ClientController:
                     else:
                         cb_ok()
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def register(self, username: str, password: str, role: str,
@@ -89,12 +87,7 @@ class ClientController:
                     else:
                         cb_ok()
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def upload_game(self, name: str, version: str, min_players: int, max_players: int, file_path: str,
@@ -155,37 +148,27 @@ class ClientController:
                     else:
                         cb_ok(games, total_count)
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def fetch_my_works(self, on_result: Optional[Callable[[list[tuple[str, str, int, int]]], None]] = None, 
                 on_error: Optional[Callable[[Exception], None]] = None):
-          def _work():
-                try:
-                 success, result = self._client.fetch_my_works()
-                 if not success:
-                      raise Exception(result or "Fetch My Works failed")
-                 
-                 assert isinstance(result, list)
-                 cb_ok = on_result
-                 if cb_ok:
-                      if self._gui:
-                            self._gui.after(0, lambda: cb_ok(result))
-                      else:
-                            cb_ok(result)
-                except Exception as e:
-                 cb_err = on_error
-                 if cb_err:
-                      if self._gui:
-                            self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                      else:
-                            cb_err(e)
-          threading.Thread(target=_work, daemon=True).start()
+        def _work():
+            try:
+                success, result = self._client.fetch_my_works()
+                if not success:
+                    raise Exception(result or "Fetch My Works failed")
+                
+                assert isinstance(result, list)
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(result))
+                    else:
+                        cb_ok(result)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
 
     def fetch_game_cover(self, game_name: str, 
                          on_result: Optional[Callable[[bytes], None]] = None, 
@@ -206,12 +189,7 @@ class ClientController:
                     else:
                         cb_ok(result)
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def fetch_game_detail(self, game_name: str, 
@@ -233,12 +211,7 @@ class ClientController:
                     else:
                         cb_ok(developer, version, min_players, max_players, description)
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def download_game(self, game_name: str, 
@@ -269,12 +242,49 @@ class ClientController:
                     else:
                         cb_ok()
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def create_room(self, game_name: str, 
+                    on_result: Optional[Callable[[str], None]] = None,
+                    on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.create_room(game_name)
+                if not success:
+                    raise Exception(result or "Create Room failed")
+                
+                assert isinstance(result, str)  # room_id
+                cb_ok = on_result
+                if cb_ok:
                     if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
+                        self._gui.after(0, lambda: cb_ok(result))
                     else:
-                        cb_err(e)
+                        cb_ok(result)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def check_my_room(self, 
+                      on_result: Optional[Callable[[bool, str, str, str, list[str]], None]] = None,
+                      on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.check_my_room()
+                if not success:
+                    raise Exception(result or "Check My Room failed")
+                
+                assert isinstance(result, tuple)
+                in_room, room_id, game_name, host, players = result
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players))
+                    else:
+                        cb_ok(in_room, room_id, game_name, host, players)
+            except Exception as e:
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def logout(self, on_result: Optional[Callable[[], None]] = None,
@@ -292,12 +302,7 @@ class ClientController:
                     else:
                         cb_ok()
             except Exception as e:
-                cb_err = on_error
-                if cb_err:
-                    if self._gui:
-                        self._gui.after(0, lambda err=e, cb=cb_err: cb(err))
-                    else:
-                        cb_err(e)
+                self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
     def close(self):

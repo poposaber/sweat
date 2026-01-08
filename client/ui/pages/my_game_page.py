@@ -10,17 +10,25 @@ class MyGamePage(customtkinter.CTkFrame):
                  library_manager: Optional[LibraryManager] = None, 
                  fetch_game_detail_callback: Optional[Callable[[str, Callable[[str, str, int, int, str], None], Callable[[Exception], None]], None]] = None,
                  download_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None], Callable[[int, int], None]], None]] = None, 
-                 on_create_room_callback: Optional[Callable[[], None]] = None):
+                 create_room_callback: Optional[Callable[[str, Callable[[str], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master)
         self.game_row_container = MyGameRowContainer(self, width=600, height=400)
         self.game_row_container.place(relx=0.5, rely=0.5, relheight=1, relwidth=1, anchor=customtkinter.CENTER)
         self._library_manager = library_manager
         self._download_callback = download_callback
-        self._on_create_room_callback = on_create_room_callback
+        self._create_room_callback = create_room_callback
         self._fetch_game_detail_callback = fetch_game_detail_callback
 
     def set_library_manager(self, library_manager: Optional[LibraryManager]):
         self._library_manager = library_manager
+
+    def _on_create_room_click(self, game_name: str):
+        if self._create_room_callback:
+            self._create_room_callback(
+                game_name,
+                self._on_create_room_success,
+                self._on_error
+            )
 
     def refresh_games(self):
         # 1. Get games from local manifest
@@ -47,7 +55,7 @@ class MyGamePage(customtkinter.CTkFrame):
                 self._fetch_game_detail_callback(
                     game_name,
                     lambda dv, gv, minp, maxp, gd, localver=version, game_name=game_name: self.on_fetch_game_detail(game_name, gv, localver),
-                    self.on_error
+                    self._on_error
                 )
 
     def on_fetch_game_detail(self, game_name: str, game_version: str, local_version: str):
@@ -61,8 +69,8 @@ class MyGamePage(customtkinter.CTkFrame):
                 "Update",
                 lambda game_name=game_name: self._download_callback(
                     game_name,
-                    self.on_download_complete,
-                    self.on_error,
+                    self._on_download_complete,
+                    self._on_error,
                     lambda downloaded, total: print(f"Downloading {game_name}: {downloaded}/{total} bytes")
                 ) if self._download_callback else None
             )
@@ -70,13 +78,16 @@ class MyGamePage(customtkinter.CTkFrame):
             self.game_row_container.set_game_row_button(
                 game_name,
                 "Create Room",
-                self._on_create_room_callback if self._on_create_room_callback else lambda game_name=game_name: print(f"Creating room for {game_name}")
+                lambda game_name=game_name: self._on_create_room_click(game_name)
             )
 
-    def on_download_complete(self):
+    def _on_download_complete(self):
         messagebox.showinfo("Download Complete", "Updated successfully.")
         self.refresh_games()
 
-    def on_error(self, error: Exception):
+    def _on_create_room_success(self, room_id: str):
+        messagebox.showinfo("Room Created", f"Room created successfully! Room ID: {room_id}\nYou can go to 'My Room' tab to manage it.")
+
+    def _on_error(self, error: Exception):
         messagebox.showerror("Error", str(error))
 

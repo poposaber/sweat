@@ -19,6 +19,9 @@ class Action(Enum):
     FETCH_STORE = 'game.fetch_store'
     FETCH_GAME_COVER = 'game.fetch_cover'
     FETCH_GAME_DETAIL = 'game.fetch_detail'
+    CREATE_ROOM = 'room.create'
+    LEAVE_ROOM = 'room.leave'
+    CHECK_MY_ROOM = 'room.check_my_room'
 
 class Role(Enum):
     PLAYER = 'player'

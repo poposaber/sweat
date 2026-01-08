@@ -2,8 +2,9 @@ import logging
 from client.infra.connector import Connector
 from client.infra.library_manager import LibraryManager
 from session.session import Session
-from client.api import auth, game
+from client.api import auth, game, room
 from protocol.payloads import game as game_payloads
+from protocol.payloads import room as room_payloads
 import os
 
 NORMAL_TIMEOUT = 3.0  # seconds
@@ -142,3 +143,23 @@ class Client:
         resp = game.download_game(self._session, game_name, dest_folder_path, self._library_manager, progress_callback)
         assert resp.ok is not None
         return resp.ok, resp.error
+    
+    def create_room(self, game_name: str) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = room.create_room(self._session, game_name)
+        if resp.ok:
+            assert isinstance(resp.payload, room_payloads.CreateRoomResponsePayload)
+            return True, resp.payload.room_id
+        else:
+            return False, resp.error
+        
+    def check_my_room(self) -> tuple[bool, tuple[bool, str, str, str, list[str]] | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = room.check_my_room(self._session)
+        if resp.ok:
+            assert isinstance(resp.payload, room_payloads.CheckMyRoomResponsePayload)
+            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.players)
+        else:
+            return False, resp.error

@@ -7,6 +7,8 @@ from server.dispatcher import Dispatcher
 from session.errors import SessionDisconnectedError
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
+from server.infra.room_manager import RoomManager
+from protocol.enums import Role
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +19,16 @@ class Server:
         self._acceptor = Acceptor(addr)
         self._db = Database()
         self._session_user_map = SessionUserMap()
-        self._dispatcher = Dispatcher(self._db, self._session_user_map)
+        self._room_manager = RoomManager()
+        self._dispatcher = Dispatcher(self._db, self._session_user_map, self._room_manager)
         self._stop_event = threading.Event()
         self._threads: list[threading.Thread] = []
         # self._sessions: list[Session] = []
         
         self._trace_io = bool(trace_io)
+
+    def output_room_manager_status(self):
+        self._room_manager.output_status()
 
     def serve(self):
         """Accept connections in a loop and handle each in a dedicated thread."""
@@ -67,11 +73,23 @@ class Server:
                             logger.exception(f"Client handler error: {e}")
                     break
         finally:
-            self._session_user_map.remove_session(session)
-            try:
-                session.close()
-            except Exception:
-                logger.exception("Failed to close session in client loop")
+            self._cleanup_session(session)
+
+    def _cleanup_session(self, session: Session):
+        userinfo = self._session_user_map.get_user_by_session(session)
+        if userinfo:
+            role, username = userinfo
+            logger.info(f"Cleaning up session for user={username}, role={role}")
+            if role == Role.PLAYER:
+                room_id = self._room_manager.get_room_id_by_player(username)
+                if room_id:
+                    self._room_manager.remove_player_from_room(room_id, username)
+                    logger.info(f"User {username} removed from room {room_id} on session cleanup")
+        self._session_user_map.remove_session(session)
+        try:
+            session.close()
+        except Exception:
+            logger.exception("Failed to close session in client loop")
 
     def close(self):
         self.stop()

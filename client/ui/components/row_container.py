@@ -28,3 +28,6 @@ class RowContainer(customtkinter.CTkScrollableFrame):
         for child in self.winfo_children():
             child.destroy()
         self._current_row = 0
+
+    def remove_row(self, widget):
+        widget.destroy()

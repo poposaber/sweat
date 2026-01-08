@@ -13,6 +13,9 @@ from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, Upl
                             FetchStorePayload, FetchStoreResponsePayload, 
                             FetchGameDetailPayload, FetchGameDetailResponsePayload, 
                             DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload)
+from .payloads.room import (CreateRoomPayload, CreateRoomResponsePayload,
+                            LeaveRoomPayload, 
+                            CheckMyRoomResponsePayload)
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
@@ -28,6 +31,9 @@ _PAYLOAD_MAP = {
     Action.DOWNLOAD_GAME_INIT: DownloadGameInitPayload,
     Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkPayload,
     Action.DOWNLOAD_GAME_FINISH: DownloadGameFinishPayload,
+    Action.CREATE_ROOM: CreateRoomPayload,
+    Action.LEAVE_ROOM: LeaveRoomPayload,
+    Action.CHECK_MY_ROOM: EmptyPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {
@@ -39,6 +45,8 @@ _RESPONSE_PAYLOAD_MAP = {
     Action.FETCH_GAME_DETAIL: FetchGameDetailResponsePayload,
     Action.DOWNLOAD_GAME_INIT: DownloadGameInitResponsePayload,
     Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkResponsePayload,
+    Action.CREATE_ROOM: CreateRoomResponsePayload,
+    Action.CHECK_MY_ROOM: CheckMyRoomResponsePayload,
 }
 
 def encode(message: Message) -> bytes:

@@ -3,6 +3,7 @@ from protocol.payloads.auth import Credential
 from protocol.payloads.common import EmptyPayload
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
+from server.infra.room_manager import RoomManager
 from session.session import Session
 from protocol.enums import Role
 
@@ -62,13 +63,19 @@ def handle_register(payload: Credential, db: Database, session: Session) -> tupl
 	return payload, True, None
 
 
-def handle_logout(payload: EmptyPayload, session_user_map: SessionUserMap, session: Session) -> tuple[EmptyPayload, bool, str | None]:
+def handle_logout(payload: EmptyPayload, room_manager: RoomManager, session_user_map: SessionUserMap, session: Session) -> tuple[EmptyPayload, bool, str | None]:
 	addr = session.peer_address
 	logger.info(f"Logout attempt: addr={addr}")
 
 	user_info = session_user_map.get_user_by_session(session)
 	if user_info:
 		role, username = user_info
+		if role == Role.PLAYER:
+			room_id = room_manager.get_room_id_by_player(username)
+			if room_id:
+				room_manager.remove_player_from_room(room_id, username)
+				logger.info(f"User {username} removed from room {room_id} on logout")
+
 		session_user_map.move_session_back(session)
 		logger.info(f"Logout success: {username} ({role.value}) session moved back")
 	else:
