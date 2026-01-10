@@ -19,3 +19,7 @@ class CheckMyRoomResponsePayload:
     game_name: str
     host: str
     players: list[str]
+
+@dataclass
+class FetchRoomListResponsePayload:
+    rooms: list[tuple[str, str, str, int, str]]  # (room_id, host, game_name, player_count, status)

@@ -63,6 +63,12 @@ class SessionUserMap:
         for bmap in self._role_bijection_map.values():
             sessions.extend(bmap.get_all_key1s())
         return sessions
+    
+    def get_all_player_sessions(self) -> list[Session]:
+        return self._role_bijection_map[Role.PLAYER].get_all_key1s()
+    
+    def get_all_developer_sessions(self) -> list[Session]:
+        return self._role_bijection_map[Role.DEVELOPER].get_all_key1s()
         
     def clear_all(self):
         with self._session_indeterminate_lock:

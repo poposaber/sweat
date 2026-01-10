@@ -61,6 +61,8 @@ class Dispatcher:
 				payload, ok, error = room_handlers.handle_create_room(message.payload, self._room_manager, self._session_user_map, session)
 			case Action.CHECK_MY_ROOM:
 				payload, ok, error = room_handlers.handle_check_my_room(self._room_manager, self._session_user_map, session)
+			case Action.FETCH_ROOM_LIST:
+				payload, ok, error = room_handlers.handle_fetch_room_list(self._room_manager, self._session_user_map, session)
 			case _:
 				# Unknown action: echo payload, mark failed
 				payload, ok, error = message.payload, False, "Unknown action"

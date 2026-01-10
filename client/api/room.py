@@ -19,3 +19,8 @@ def check_my_room(session: Session) -> Message:
     req = Message.request(Action.CHECK_MY_ROOM, EmptyPayload())
     resp = session.request_response(req)
     return resp
+
+def fetch_room_list(session: Session) -> Message:
+    req = Message.request(Action.FETCH_ROOM_LIST, EmptyPayload())
+    resp = session.request_response(req)
+    return resp

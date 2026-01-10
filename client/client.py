@@ -5,6 +5,8 @@ from session.session import Session
 from client.api import auth, game, room
 from protocol.payloads import game as game_payloads
 from protocol.payloads import room as room_payloads
+from protocol.message import Message
+from typing import Callable
 import os
 
 NORMAL_TIMEOUT = 3.0  # seconds
@@ -18,7 +20,7 @@ class Client:
         self._username: str | None = None
         self._library_manager: LibraryManager | None = None
 
-    def connect(self, connect_timeout: float | None = None, on_event=None, on_disconnect=None):
+    def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message], None] | None = None, on_disconnect=None):
         session = self._connector.connect(connect_timeout=connect_timeout)
         self._session = session
         self.settimeout(NORMAL_TIMEOUT)
@@ -154,12 +156,22 @@ class Client:
         else:
             return False, resp.error
         
-    def check_my_room(self) -> tuple[bool, tuple[bool, str, str, str, list[str]] | str | None]:
+    def check_my_room(self) -> tuple[bool, tuple[bool, str, str, str, list[str], str] | str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
         resp = room.check_my_room(self._session)
         if resp.ok:
             assert isinstance(resp.payload, room_payloads.CheckMyRoomResponsePayload)
-            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.players)
+            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.players, self._username or "")
+        else:
+            return False, resp.error
+        
+    def fetch_room_list(self) -> tuple[bool, list[tuple[str, str, str, int, str]] | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = room.fetch_room_list(self._session)
+        if resp.ok:
+            assert isinstance(resp.payload, room_payloads.FetchRoomListResponsePayload)
+            return True, resp.payload.rooms
         else:
             return False, resp.error

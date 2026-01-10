@@ -6,7 +6,7 @@ from tkinter import messagebox
 
 class MyRoomPage(customtkinter.CTkFrame):
     def __init__(self, master, 
-                 check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str]], None], Callable[[Exception], None]], None]] = None, 
+                 check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str], str], None], Callable[[Exception], None]], None]] = None, 
                  leave_room_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None, 
                  start_game_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master)
@@ -34,12 +34,13 @@ class MyRoomPage(customtkinter.CTkFrame):
         self.my_room_detail_slide.place_forget()
         self.not_in_room_label.place(relx=0.5, rely=0.3, anchor=customtkinter.CENTER)
 
-    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, players: list[str]):
+    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, players: list[str], username: str):
         if in_room:
             self.switch_to_room(room_id, game_name)
             self.my_room_detail_slide.clear_players()
             for player_name in players:
-                self.my_room_detail_slide.add_player(player_name, is_host=(player_name == host))
+                self.my_room_detail_slide.add_player(player_name, is_host=(player_name == host), is_you=(player_name == username))
+            self.my_room_detail_slide.set_host_mode(host == username)
         else:
             self.switch_to_no_room()
     

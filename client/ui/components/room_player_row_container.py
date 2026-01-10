@@ -8,11 +8,11 @@ class RoomPlayerRowContainer(RowContainer):
         super().__init__(master, width=width, height=height)
         self._row_dict: dict[str, RoomPlayerRow] = {}
 
-    def add_player_row(self, player_name: str, is_host: bool = False):
-        row = super().add_row(RoomPlayerRow, player_name, is_host)
+    def add_player_row(self, player_name: str, is_host: bool = False, is_you: bool = False):
+        row = super().add_row(RoomPlayerRow, player_name, is_host, is_you)
         self._row_dict[player_name] = row
 
-    def add_player_rows(self, players: list[tuple[str, bool]]):
+    def add_player_rows(self, players: list[tuple[str, bool, bool]]):
         for player in players:
             self.add_player_row(*player)
 
@@ -29,7 +29,7 @@ class RoomPlayerRowContainer(RowContainer):
         super().clear_rows()
         self._row_dict.clear()
 
-    def set_player_rows(self, players: list[tuple[str, bool]]):
+    def set_player_rows(self, players: list[tuple[str, bool, bool]]):
         self.clear_player_rows()
         self.add_player_rows(players)
         

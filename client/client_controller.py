@@ -4,6 +4,7 @@ from typing import Callable, Optional
 import threading
 import logging
 from protocol.enums import Role
+from protocol.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class ClientController:
                 on_error(e)
 
     def connect(self, *, on_result: Optional[Callable[[], None]] = None, on_error: Optional[Callable[[Exception], None]] = None,
-                start_events: bool = True, on_event: Optional[Callable] = None, on_disconnect: Optional[Callable[[], None]] = None):
+                start_events: bool = True, on_event: Optional[Callable[[Message], None]] = None, on_disconnect: Optional[Callable[[], None]] = None):
         
         # Wrap on_disconnect to run on GUI thread if GUI exists
         safe_on_disconnect = on_disconnect
@@ -266,7 +267,7 @@ class ClientController:
         threading.Thread(target=_work, daemon=True).start()
 
     def check_my_room(self, 
-                      on_result: Optional[Callable[[bool, str, str, str, list[str]], None]] = None,
+                      on_result: Optional[Callable[[bool, str, str, str, list[str], str], None]] = None,
                       on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
@@ -275,14 +276,34 @@ class ClientController:
                     raise Exception(result or "Check My Room failed")
                 
                 assert isinstance(result, tuple)
-                in_room, room_id, game_name, host, players = result
+                in_room, room_id, game_name, host, players, username = result
                 
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:
-                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players))
+                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players, username))
                     else:
-                        cb_ok(in_room, room_id, game_name, host, players)
+                        cb_ok(in_room, room_id, game_name, host, players, username)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+        
+    def fetch_room_list(self, 
+                        on_result: Optional[Callable[[list[tuple[str, str, str, int, str]]], None]] = None,
+                        on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.fetch_room_list()
+                if not success:
+                    raise Exception(result or "Fetch Room List failed")
+                
+                assert isinstance(result, list)
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(result))
+                    else:
+                        cb_ok(result)
             except Exception as e:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()

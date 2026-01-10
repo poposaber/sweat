@@ -6,6 +6,9 @@ from .ui.views.lobby_view import LobbyView
 from .ui.views.developer_view import DeveloperView
 from .client_state import ClientState
 from protocol.enums import Role
+from protocol.message import Message
+from protocol.enums import Action
+from protocol.payloads.events import RoomCreatedEventPayload
 
 class ClientGUI:
     def __init__(self, root: customtkinter.CTk, client_controller: ClientController):
@@ -27,7 +30,8 @@ class ClientGUI:
                                     fetch_game_detail_callback=self._client_controller.fetch_game_detail, 
                                     download_callback=self._client_controller.download_game, 
                                     create_room_callback=self._client_controller.create_room, 
-                                    check_my_room_callback=self._client_controller.check_my_room)
+                                    check_my_room_callback=self._client_controller.check_my_room, 
+                                    fetch_room_list_callback=self._client_controller.fetch_room_list)
         # Initially hide lobby page
 
         self.developer_view = DeveloperView(self._root, 
@@ -97,10 +101,18 @@ class ClientGUI:
         self.entry_view.login_page.focus()
         # self.status_label.configure(text="Connected")
 
+    def _on_event(self, event: Message):
+        if event.action == Action.ROOM_CREATED:
+            payload: RoomCreatedEventPayload = event.payload
+            # Add the new room to the lobby list if we are in the lobby
+            if self._state == ClientState.IN_LOBBY:
+                self.lobby_view.this_lobby_page.add_room(payload.room_id, payload.host_username, payload.game_name, payload.current_players, payload.status)
+
     def _auto_connect(self):
         # self.status_label.configure(text="Connecting...")
         self._client_controller.connect(
             on_result=self._on_connected,
+            on_event=self._on_event,
         )
 
     def _on_login_submit(self, username: str, password: str, role: str):

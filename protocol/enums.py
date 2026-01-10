@@ -22,6 +22,18 @@ class Action(Enum):
     CREATE_ROOM = 'room.create'
     LEAVE_ROOM = 'room.leave'
     CHECK_MY_ROOM = 'room.check_my_room'
+    FETCH_ROOM_LIST = 'room.fetch_list'
+    # used in events
+    ROOM_CREATED = 'room.created'
+    ROOM_REMOVED = 'room.removed'
+    ROOM_UPDATED = 'room.updated'
+    ROOM_PLAYER_JOINED = 'room.player_joined'
+    ROOM_PLAYER_LEFT = 'room.player_left'
+
+class RoomStatus(Enum):
+    WAITING = 'waiting'
+    STARTING = 'starting'
+    IN_GAME = 'in_game'
 
 class Role(Enum):
     PLAYER = 'player'

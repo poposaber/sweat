@@ -4,6 +4,7 @@ import random
 import string
 from dataclasses import dataclass
 from .errors import PlayerAlreadyInRoomError, RoomIDGenerationError
+from protocol.enums import RoomStatus
 
 ROOM_ID_GENERATION_MAX_ATTEMPTS = 36 ** 5 # 60,466,176
 ROOM_ID_LENGTH = 5
@@ -15,6 +16,7 @@ class Room:
     host: str
     game_name: str
     players: list[str]
+    status: RoomStatus = RoomStatus.WAITING
 
 class RoomManager:
     def __init__(self):

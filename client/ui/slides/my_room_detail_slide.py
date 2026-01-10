@@ -35,6 +35,7 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
             self, text="Start Game",
             command=self.on_start_game_click
         )
+        self.start_game_button.grid(row=2, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
 
     def get_room_id(self) -> str:
         return self._room_id
@@ -50,8 +51,8 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
         self._game_name = game_name
         self.game_name_label.configure(text=f"Game: {game_name}")
 
-    def add_player(self, player_name: str, is_host: bool = False):
-        self.room_players_container.add_player_row(player_name, is_host)
+    def add_player(self, player_name: str, is_host: bool = False, is_you: bool = False):
+        self.room_players_container.add_player_row(player_name, is_host, is_you)
 
     def clear_players(self):
         self.room_players_container.clear_player_rows()
@@ -71,3 +72,9 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
     def _on_error(self, error: Exception):
         messagebox.showerror("Error", str(error))
         self.start_game_button.configure(state="normal", text="Start Game")
+
+    def set_host_mode(self, is_host: bool):
+        if is_host:
+            self.start_game_button.configure(state="normal")
+        else:
+            self.start_game_button.configure(state="disabled")
