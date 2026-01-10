@@ -7,18 +7,20 @@ from .enums import MessageType, Action
 from .errors import SchemaError
 from .payloads.auth import Credential
 from .payloads.common import EmptyPayload
-from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, UploadGameInitResponsePayload, 
-                            FetchMyWorksResponsePayload, 
-                            FetchGameCoverPayload, FetchGameCoverResponsePayload, 
-                            FetchStorePayload, FetchStoreResponsePayload, 
-                            FetchGameDetailPayload, FetchGameDetailResponsePayload, 
-                            DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload)
-from .payloads.room import (CreateRoomPayload, CreateRoomResponsePayload,
-                            LeaveRoomPayload, 
-                            CheckMyRoomResponsePayload, 
-                            FetchRoomListResponsePayload)
+# from .payloads.game import (UploadGameChunkPayload, UploadGameFinishPayload, UploadGameInitPayload, UploadGameInitResponsePayload, 
+#                             FetchMyWorksResponsePayload, 
+#                             FetchGameCoverPayload, FetchGameCoverResponsePayload, 
+#                             FetchStorePayload, FetchStoreResponsePayload, 
+#                             FetchGameDetailPayload, FetchGameDetailResponsePayload, 
+#                             DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload)
+# from .payloads.room import (CreateRoomPayload, CreateRoomResponsePayload,
+#                             LeaveRoomPayload, 
+#                             CheckMyRoomResponsePayload, 
+#                             FetchRoomListResponsePayload)
+from .payloads.game import *
+from .payloads.room import *
 
-from .payloads import events
+from .payloads.events import *
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
@@ -35,10 +37,13 @@ _PAYLOAD_MAP = {
     Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkPayload,
     Action.DOWNLOAD_GAME_FINISH: DownloadGameFinishPayload,
     Action.CREATE_ROOM: CreateRoomPayload,
-    Action.LEAVE_ROOM: LeaveRoomPayload,
+    Action.LEAVE_ROOM: EmptyPayload,
     Action.CHECK_MY_ROOM: EmptyPayload,
     Action.FETCH_ROOM_LIST: EmptyPayload,
-    Action.ROOM_CREATED: events.RoomCreatedEventPayload, 
+    Action.ROOM_CREATED: RoomCreatedEventPayload, 
+    Action.ROOM_REMOVED: RoomRemovedEventPayload,
+    Action.ROOM_UPDATED: RoomUpdatedEventPayload,
+    Action.MY_ROOM_UPDATED: MyRoomUpdatedEventPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {

@@ -13,5 +13,5 @@ class RoomPlayerRow(customtkinter.CTkFrame):
             self.host_label.pack(side="left", padx=10, pady=5)
 
         if is_you:
-            self.you_label = customtkinter.CTkLabel(self, text="(You)", font=("Arial", 12), text_color="blue")
+            self.you_label = customtkinter.CTkLabel(self, text="(You)", font=("Arial", 12), text_color="green")
             self.you_label.pack(side="left", padx=10, pady=5)

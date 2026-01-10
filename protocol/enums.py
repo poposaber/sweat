@@ -27,6 +27,7 @@ class Action(Enum):
     ROOM_CREATED = 'room.created'
     ROOM_REMOVED = 'room.removed'
     ROOM_UPDATED = 'room.updated'
+    MY_ROOM_UPDATED = 'room.my_room_updated'
     ROOM_PLAYER_JOINED = 'room.player_joined'
     ROOM_PLAYER_LEFT = 'room.player_left'
 

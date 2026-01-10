@@ -29,7 +29,7 @@ class ClientController:
                 on_error(e)
 
     def connect(self, *, on_result: Optional[Callable[[], None]] = None, on_error: Optional[Callable[[Exception], None]] = None,
-                start_events: bool = True, on_event: Optional[Callable[[Message], None]] = None, on_disconnect: Optional[Callable[[], None]] = None):
+                start_events: bool = True, on_event: Optional[Callable[[Message, str | None], None]] = None, on_disconnect: Optional[Callable[[], None]] = None):
         
         # Wrap on_disconnect to run on GUI thread if GUI exists
         safe_on_disconnect = on_disconnect
@@ -266,8 +266,27 @@ class ClientController:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
+    def leave_room(self, 
+                   on_result: Optional[Callable[[], None]] = None,
+                   on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, error = self._client.leave_room()
+                if not success:
+                    raise Exception(error or "Leave Room failed")
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
     def check_my_room(self, 
-                      on_result: Optional[Callable[[bool, str, str, str, list[str], str], None]] = None,
+                      on_result: Optional[Callable[[bool, str, str, str, list[str], int, str], None]] = None,
                       on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
@@ -276,20 +295,20 @@ class ClientController:
                     raise Exception(result or "Check My Room failed")
                 
                 assert isinstance(result, tuple)
-                in_room, room_id, game_name, host, players, username = result
+                in_room, room_id, game_name, host, players, max_players, username = result
                 
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:
-                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players, username))
+                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players, max_players, username))
                     else:
-                        cb_ok(in_room, room_id, game_name, host, players, username)
+                        cb_ok(in_room, room_id, game_name, host, players, max_players, username)
             except Exception as e:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
         
     def fetch_room_list(self, 
-                        on_result: Optional[Callable[[list[tuple[str, str, str, int, str]]], None]] = None,
+                        on_result: Optional[Callable[[list[tuple[str, str, str, int, int, str]]], None]] = None,
                         on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:

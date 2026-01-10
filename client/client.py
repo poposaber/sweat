@@ -20,7 +20,7 @@ class Client:
         self._username: str | None = None
         self._library_manager: LibraryManager | None = None
 
-    def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message], None] | None = None, on_disconnect=None):
+    def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message, str | None], None] | None = None, on_disconnect=None):
         session = self._connector.connect(connect_timeout=connect_timeout)
         self._session = session
         self.settimeout(NORMAL_TIMEOUT)
@@ -28,7 +28,7 @@ class Client:
             session.set_trace_io(self._trace_io)
         except Exception:
             pass
-        self._session.start_recv_loop(on_event=on_event, on_disconnect=on_disconnect)
+        self._session.start_recv_loop(on_event=lambda msg, un=self._username: on_event(msg, un) if on_event else None, on_disconnect=on_disconnect)
     
     def is_connected(self) -> bool:
         return self._session is not None
@@ -156,17 +156,24 @@ class Client:
         else:
             return False, resp.error
         
-    def check_my_room(self) -> tuple[bool, tuple[bool, str, str, str, list[str], str] | str | None]:
+    def leave_room(self) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = room.leave_room(self._session)
+        assert resp.ok is not None
+        return resp.ok, resp.error
+        
+    def check_my_room(self) -> tuple[bool, tuple[bool, str, str, str, list[str], int, str] | str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
         resp = room.check_my_room(self._session)
         if resp.ok:
             assert isinstance(resp.payload, room_payloads.CheckMyRoomResponsePayload)
-            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.players, self._username or "")
+            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.players, resp.payload.max_players, self._username or "")
         else:
             return False, resp.error
         
-    def fetch_room_list(self) -> tuple[bool, list[tuple[str, str, str, int, str]] | str | None]:
+    def fetch_room_list(self) -> tuple[bool, list[tuple[str, str, str, int, int, str]] | str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
         resp = room.fetch_room_list(self._session)

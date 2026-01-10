@@ -13,15 +13,19 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
         self._room_id: str = ""
         self._game_name: str = ""
+        self._max_players: int = 0
 
-        self._room_id_game_name_frame = customtkinter.CTkFrame(self, fg_color="transparent")
-        self._room_id_game_name_frame.grid_columnconfigure(0, weight=1)
-        self._room_id_game_name_frame.grid_columnconfigure(1, weight=0)
-        self._room_id_game_name_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
-        self.room_id_label = customtkinter.CTkLabel(self._room_id_game_name_frame, text="Room ID: N/A", font=("Arial", 16))
+        self.info_frame = customtkinter.CTkFrame(self, fg_color="transparent")
+        self.info_frame.grid_columnconfigure(0, weight=1)
+        self.info_frame.grid_columnconfigure(1, weight=1)
+        self.info_frame.grid_columnconfigure(2, weight=0)
+        self.info_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self.room_id_label = customtkinter.CTkLabel(self.info_frame, text="Room ID: N/A", font=("Arial", 16))
         self.room_id_label.grid(row=0, column=0, padx=(10, 5), pady=(10, 5), sticky="w")
-        self.game_name_label = customtkinter.CTkLabel(self._room_id_game_name_frame, text="Game: N/A", font=("Arial", 16))
-        self.game_name_label.grid(row=0, column=1, padx=(5, 10), pady=(10, 5), sticky="e")
+        self.game_name_label = customtkinter.CTkLabel(self.info_frame, text="Game: N/A", font=("Arial", 16))
+        self.game_name_label.grid(row=0, column=1, padx=(5, 10), pady=(10, 5), sticky="w")
+        self.max_players_label = customtkinter.CTkLabel(self.info_frame, text="Max Players: N/A", font=("Arial", 16))
+        self.max_players_label.grid(row=0, column=2, padx=(5, 10), pady=(10, 5), sticky="e")
 
         self.room_players_container = RoomPlayerRowContainer(self)
         self.room_players_container.grid(row=1, column=0, columnspan=2, padx=(10, 5), pady=(5, 10), sticky="nsew")
@@ -51,6 +55,13 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
         self._game_name = game_name
         self.game_name_label.configure(text=f"Game: {game_name}")
 
+    def get_max_players(self) -> int:
+        return self._max_players
+    
+    def set_max_players(self, max_players: int):
+        self._max_players = max_players
+        self.max_players_label.configure(text=f"Max Players: {max_players}")
+
     def add_player(self, player_name: str, is_host: bool = False, is_you: bool = False):
         self.room_players_container.add_player_row(player_name, is_host, is_you)
 
@@ -78,3 +89,13 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
             self.start_game_button.configure(state="normal")
         else:
             self.start_game_button.configure(state="disabled")
+
+    def reset(self):
+        self._room_id = ""
+        self._game_name = ""
+        self._max_players = 0
+        self.room_id_label.configure(text="Room ID: N/A")
+        self.game_name_label.configure(text="Game: N/A")
+        self.max_players_label.configure(text="Max Players: N/A")
+        self.clear_players()
+        self.start_game_button.configure(state="disabled", text="Start Game")

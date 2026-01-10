@@ -3,7 +3,7 @@ import threading
 import random
 import string
 from dataclasses import dataclass
-from .errors import PlayerAlreadyInRoomError, RoomIDGenerationError
+from .errors import *
 from protocol.enums import RoomStatus
 
 ROOM_ID_GENERATION_MAX_ATTEMPTS = 36 ** 5 # 60,466,176
@@ -16,6 +16,7 @@ class Room:
     host: str
     game_name: str
     players: list[str]
+    max_players: int
     status: RoomStatus = RoomStatus.WAITING
 
 class RoomManager:
@@ -71,37 +72,41 @@ class RoomManager:
             attempts += 1
         raise RoomIDGenerationError("Failed to generate unique room ID after maximum attempts")
 
-    def create_room(self, host_username: str, game_name: str) -> str:
+    def create_room(self, host_username: str, game_name: str, max_players: int) -> str:
         if host_username in self._player_room_map:
+            logger.warning(f"Create room failed: user {host_username} is already in a room")
             raise PlayerAlreadyInRoomError(f"User {host_username} is already in a room")
         room_id = self._generate_room_id()
         with self._room_player_lock:
             self._rooms[room_id] = Room(
-                host=host_username, game_name=game_name, players=[host_username])
+                host=host_username, game_name=game_name, players=[host_username], max_players=max_players)
             self._player_room_map[host_username] = room_id
         logger.info(f"Room created: room_id={room_id}, host={host_username}, game={game_name}")
         return room_id
     
-    def add_player_to_room(self, room_id: str, username: str) -> bool:
+    def add_player_to_room(self, room_id: str, username: str) -> None:
         with self._room_player_lock:
             room = self._rooms.get(room_id)
             if not room:
                 logger.warning(f"Add player to room failed: room_id={room_id} not found")
-                return False
+                raise RoomNotFoundError(f"Room {room_id} not found")
+            if len(room.players) >= room.max_players:
+                logger.warning(f"Add player to room failed: room_id={room_id} is full")
+                raise RoomFullError(f"Room {room_id} is full")
             if username in room.players:
                 logger.warning(f"Add player to room failed: user {username} already in room {room_id}")
-                return False
+                raise PlayerAlreadyInRoomError(f"User {username} is already in room {room_id}")
             room.players.append(username)
             self._player_room_map[username] = room_id
             logger.info(f"User {username} added to room {room_id}")
-            return True
 
-    def remove_player_from_room(self, room_id: str, username: str) -> bool:
+
+    def remove_player_from_room(self, room_id: str, username: str) -> None:
         with self._room_player_lock:
             room = self._rooms.get(room_id)
             if not room:
                 logger.warning(f"Leave room failed: room_id={room_id} not found")
-                return False
+                raise RoomNotFoundError(f"Room {room_id} not found")
             if username in room.players:
                 room.players.remove(username)
                 logger.info(f"User {username} left room {room_id}")
@@ -112,10 +117,9 @@ class RoomManager:
                     room.host = room.players[0]
                     logger.info(f"Host of room {room_id} changed to {room.host}")
                 self._player_room_map.pop(username, None)
-                return True
             else:
                 logger.warning(f"Leave room failed: user {username} not in room {room_id}")
-                return False
+                raise PlayerNotInRoomError(f"User {username} is not in room {room_id}")
             
     def get_all_rooms(self) -> dict[str, Room]:
         with self._room_player_lock:

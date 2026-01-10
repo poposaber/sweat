@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from protocol.enums import RoomStatus
 
 class RoomListRow(customtkinter.CTkFrame):
-    def __init__(self, master, room_id: str, host: str, game_name: str, player_count: int, status: str):
+    def __init__(self, master, room_id: str, host: str, game_name: str, player_count: int, max_players: int, status: str):
         super().__init__(master)
 
         self.room_id = room_id
@@ -20,7 +20,7 @@ class RoomListRow(customtkinter.CTkFrame):
         self.game_name_label = customtkinter.CTkLabel(self, text=f"Game: {game_name}", font=("Arial", 14))
         self.game_name_label.pack(side="left", padx=10, pady=5)
 
-        self.player_count_label = customtkinter.CTkLabel(self, text=f"Players: {player_count}", font=("Arial", 14))
+        self.player_count_label = customtkinter.CTkLabel(self, text=f"Players: {player_count}/{max_players}", font=("Arial", 14))
         self.player_count_label.pack(side="left", padx=10, pady=5)
         try:
             room_status = RoomStatus(status)
@@ -30,3 +30,18 @@ class RoomListRow(customtkinter.CTkFrame):
 
         self.status_label = customtkinter.CTkLabel(self, text=f"Status: {status_text}", font=("Arial", 14))
         self.status_label.pack(side="left", padx=10, pady=5)
+
+    def update_row(self, host: str, game_name: str, player_count: int, max_players: int, status: str):
+        self.host = host
+        self.game_name = game_name
+        self.player_count = player_count
+
+        self.host_label.configure(text=f"Host: {host}")
+        self.game_name_label.configure(text=f"Game: {game_name}")
+        self.player_count_label.configure(text=f"Players: {player_count}/{max_players}")
+        try:
+            room_status = RoomStatus(status)
+            status_text = room_status.name.replace("_", " ").title()
+        except ValueError:
+            status_text = "Unknown"
+        self.status_label.configure(text=f"Status: {status_text}")

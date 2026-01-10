@@ -8,7 +8,7 @@ from .client_state import ClientState
 from protocol.enums import Role
 from protocol.message import Message
 from protocol.enums import Action
-from protocol.payloads.events import RoomCreatedEventPayload
+from protocol.payloads.events import *
 
 class ClientGUI:
     def __init__(self, root: customtkinter.CTk, client_controller: ClientController):
@@ -30,6 +30,7 @@ class ClientGUI:
                                     fetch_game_detail_callback=self._client_controller.fetch_game_detail, 
                                     download_callback=self._client_controller.download_game, 
                                     create_room_callback=self._client_controller.create_room, 
+                                    leave_room_callback=self._client_controller.leave_room,
                                     check_my_room_callback=self._client_controller.check_my_room, 
                                     fetch_room_list_callback=self._client_controller.fetch_room_list)
         # Initially hide lobby page
@@ -101,13 +102,24 @@ class ClientGUI:
         self.entry_view.login_page.focus()
         # self.status_label.configure(text="Connected")
 
-    def _on_event(self, event: Message):
-        if event.action == Action.ROOM_CREATED:
-            payload: RoomCreatedEventPayload = event.payload
-            # Add the new room to the lobby list if we are in the lobby
-            if self._state == ClientState.IN_LOBBY:
-                self.lobby_view.this_lobby_page.add_room(payload.room_id, payload.host_username, payload.game_name, payload.current_players, payload.status)
-
+    def _on_event(self, event: Message, username: str | None):
+        if self._state == ClientState.IN_LOBBY:
+            match event.action:
+                case Action.ROOM_CREATED:
+                    created_payload: RoomCreatedEventPayload = event.payload
+                    # Add the new room to the lobby list if we are in the lobby
+                    self.lobby_view.this_lobby_page.add_room(created_payload.room_id, created_payload.host_username, created_payload.game_name, created_payload.current_players, created_payload.max_players, created_payload.status)
+                case Action.ROOM_REMOVED:
+                    removed_payload: RoomRemovedEventPayload = event.payload
+                    self.lobby_view.this_lobby_page.remove_room(removed_payload.room_id)
+                case Action.ROOM_UPDATED:
+                    updated_payload: RoomUpdatedEventPayload = event.payload
+                    self.lobby_view.this_lobby_page.update_room(updated_payload.room_id, updated_payload.host_username, updated_payload.game_name, updated_payload.current_players, updated_payload.max_players, updated_payload.status)
+                case Action.MY_ROOM_UPDATED:
+                    if not username:
+                        return
+                    my_room_updated_payload: MyRoomUpdatedEventPayload = event.payload
+                    self.lobby_view.my_room_page.set_room_players(my_room_updated_payload.players, my_room_updated_payload.host_username, username)
     def _auto_connect(self):
         # self.status_label.configure(text="Connecting...")
         self._client_controller.connect(

@@ -58,7 +58,9 @@ class Dispatcher:
 			case Action.DOWNLOAD_GAME_FINISH:
 				payload, ok, error = game_handlers.handle_download_game_finish(message.payload, self._download_manager, self._session_user_map, session)
 			case Action.CREATE_ROOM:
-				payload, ok, error = room_handlers.handle_create_room(message.payload, self._room_manager, self._session_user_map, session)
+				payload, ok, error = room_handlers.handle_create_room(message.payload, self._db, self._room_manager, self._session_user_map, session)
+			case Action.LEAVE_ROOM:
+				payload, ok, error = room_handlers.handle_leave_room(self._room_manager, self._session_user_map, session)
 			case Action.CHECK_MY_ROOM:
 				payload, ok, error = room_handlers.handle_check_my_room(self._room_manager, self._session_user_map, session)
 			case Action.FETCH_ROOM_LIST:
