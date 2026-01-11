@@ -8,11 +8,11 @@ class RoomListRowContainer(RowContainer):
         super().__init__(master, width=width, height=height)
         self._row_dict: dict[str, RoomListRow] = {}
 
-    def add_room_row(self, room_id: str, host: str, game_name: str, player_count: int, max_players: int, status: str):
-        row = super().add_row(RoomListRow, room_id, host, game_name, player_count, max_players, status)
+    def add_room_row(self, room_id: str, host: str, game_name: str, player_count: int, max_players: int, status: str, on_join_room_click: Optional[Callable[[], None]] = None):
+        row = super().add_row(RoomListRow, room_id, host, game_name, player_count, max_players, status, on_join_room_click)
         self._row_dict[room_id] = row
 
-    def add_room_rows(self, rooms: list[tuple[str, str, str, int, int, str]]):
+    def add_room_rows(self, rooms: list[tuple[str, str, str, int, int, str, Optional[Callable[[], None]]]]):
         for room in rooms:
             self.add_room_row(*room)
 
@@ -34,6 +34,6 @@ class RoomListRowContainer(RowContainer):
         super().clear_rows()
         self._row_dict.clear()
 
-    def set_room_rows(self, rooms: list[tuple[str, str, str, int, int, str]]):
+    def set_room_rows(self, rooms: list[tuple[str, str, str, int, int, str, Optional[Callable[[], None]]]]):
         self.clear_room_rows()
         self.add_room_rows(rooms)

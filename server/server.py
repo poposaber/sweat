@@ -9,6 +9,7 @@ from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.room_manager import RoomManager
 from protocol.enums import Role
+from server.api.room_event_publisher import broadcast_leave_room_event
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ class Server:
                 room_id = self._room_manager.get_room_id_by_player(username)
                 if room_id:
                     self._room_manager.remove_player_from_room(room_id, username)
+                    broadcast_leave_room_event(self._room_manager, self._session_user_map, username, room_id)
                     logger.info(f"User {username} removed from room {room_id} on session cleanup")
         self._session_user_map.remove_session(session)
         try:

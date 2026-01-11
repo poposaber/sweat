@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class Room:
     host: str
     game_name: str
-    players: list[str]
+    player_list: list[str]
     max_players: int
     status: RoomStatus = RoomStatus.WAITING
 
@@ -79,7 +79,7 @@ class RoomManager:
         room_id = self._generate_room_id()
         with self._room_player_lock:
             self._rooms[room_id] = Room(
-                host=host_username, game_name=game_name, players=[host_username], max_players=max_players)
+                host=host_username, game_name=game_name, player_list=[host_username], max_players=max_players)
             self._player_room_map[host_username] = room_id
         logger.info(f"Room created: room_id={room_id}, host={host_username}, game={game_name}")
         return room_id
@@ -90,13 +90,16 @@ class RoomManager:
             if not room:
                 logger.warning(f"Add player to room failed: room_id={room_id} not found")
                 raise RoomNotFoundError(f"Room {room_id} not found")
-            if len(room.players) >= room.max_players:
+            if len(room.player_list) >= room.max_players:
                 logger.warning(f"Add player to room failed: room_id={room_id} is full")
                 raise RoomFullError(f"Room {room_id} is full")
-            if username in room.players:
+            if username in room.player_list:
                 logger.warning(f"Add player to room failed: user {username} already in room {room_id}")
                 raise PlayerAlreadyInRoomError(f"User {username} is already in room {room_id}")
-            room.players.append(username)
+            if username in self._player_room_map:
+                logger.warning(f"Add player to room failed: user {username} is already in another room")
+                raise PlayerAlreadyInRoomError(f"User {username} is already in another room {self._player_room_map[username]}")
+            room.player_list.append(username)
             self._player_room_map[username] = room_id
             logger.info(f"User {username} added to room {room_id}")
 
@@ -107,14 +110,14 @@ class RoomManager:
             if not room:
                 logger.warning(f"Leave room failed: room_id={room_id} not found")
                 raise RoomNotFoundError(f"Room {room_id} not found")
-            if username in room.players:
-                room.players.remove(username)
+            if username in room.player_list:
+                room.player_list.remove(username)
                 logger.info(f"User {username} left room {room_id}")
-                if not room.players:
+                if not room.player_list:
                     del self._rooms[room_id]
                     logger.info(f"Room {room_id} deleted as it became empty")
                 elif username == room.host:
-                    room.host = room.players[0]
+                    room.host = room.player_list[0]
                     logger.info(f"Host of room {room_id} changed to {room.host}")
                 self._player_room_map.pop(username, None)
             else:
@@ -145,7 +148,7 @@ class RoomManager:
             if not self._rooms:
                 logger.info("No active rooms.")
             for room_id, room in self._rooms.items():
-                logger.info(f"Room ID: {room_id}, Host: {room.host}, Game: {room.game_name}, Players: {room.players}")
+                logger.info(f"Room ID: {room_id}, Host: {room.host}, Game: {room.game_name}, Players: {room.player_list}")
         with self._id_pool_lock:
             logger.debug(f"Free Room ID Pool: {self._free_ids}")
         

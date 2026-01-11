@@ -3,7 +3,8 @@ from protocol.message import Message
 from protocol.enums import Action
 
 from protocol.payloads.room import (
-    CreateRoomPayload
+    CreateRoomPayload,
+    JoinRoomPayload
 )
 
 from protocol.payloads.common import EmptyPayload
@@ -21,6 +22,12 @@ def check_my_room(session: Session) -> Message:
 
 def fetch_room_list(session: Session) -> Message:
     req = Message.request(Action.FETCH_ROOM_LIST, EmptyPayload())
+    resp = session.request_response(req)
+    return resp
+
+def join_room(session: Session, room_id: str) -> Message:
+    payload = JoinRoomPayload(room_id=room_id)
+    req = Message.request(Action.JOIN_ROOM, payload)
     resp = session.request_response(req)
     return resp
 

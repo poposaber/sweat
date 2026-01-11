@@ -20,6 +20,7 @@ class Action(Enum):
     FETCH_GAME_COVER = 'game.fetch_cover'
     FETCH_GAME_DETAIL = 'game.fetch_detail'
     CREATE_ROOM = 'room.create'
+    JOIN_ROOM = 'room.join'
     LEAVE_ROOM = 'room.leave'
     CHECK_MY_ROOM = 'room.check_my_room'
     FETCH_ROOM_LIST = 'room.fetch_list'

@@ -44,6 +44,7 @@ _PAYLOAD_MAP = {
     Action.ROOM_REMOVED: RoomRemovedEventPayload,
     Action.ROOM_UPDATED: RoomUpdatedEventPayload,
     Action.MY_ROOM_UPDATED: MyRoomUpdatedEventPayload,
+    Action.JOIN_ROOM: JoinRoomPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {
@@ -58,6 +59,7 @@ _RESPONSE_PAYLOAD_MAP = {
     Action.CREATE_ROOM: CreateRoomResponsePayload,
     Action.CHECK_MY_ROOM: CheckMyRoomResponsePayload,
     Action.FETCH_ROOM_LIST: FetchRoomListResponsePayload,
+    Action.JOIN_ROOM: EmptyPayload,
 }
 
 def encode(message: Message) -> bytes:

@@ -4,8 +4,11 @@ from protocol.payloads.common import EmptyPayload
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.room_manager import RoomManager
+from server.infra import broadcaster
 from session.session import Session
 from protocol.enums import Role
+from protocol.message import Message
+from server.api.room_event_publisher import broadcast_leave_room_event
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +78,9 @@ def handle_logout(payload: EmptyPayload, room_manager: RoomManager, session_user
 			if room_id:
 				room_manager.remove_player_from_room(room_id, username)
 				logger.info(f"User {username} removed from room {room_id} on logout")
+				# broadcast
+				broadcast_leave_room_event(room_manager, session_user_map, username, room_id)
+
 
 		session_user_map.move_session_back(session)
 		logger.info(f"Logout success: {username} ({role.value}) session moved back")

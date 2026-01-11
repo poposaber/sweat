@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from protocol.enums import RoomStatus
 
 class RoomListRow(customtkinter.CTkFrame):
-    def __init__(self, master, room_id: str, host: str, game_name: str, player_count: int, max_players: int, status: str):
+    def __init__(self, master, room_id: str, host: str, game_name: str, player_count: int, max_players: int, status: str, on_join_room_click: Optional[Callable[[], None]] = None):
         super().__init__(master)
 
         self.room_id = room_id
@@ -30,6 +30,9 @@ class RoomListRow(customtkinter.CTkFrame):
 
         self.status_label = customtkinter.CTkLabel(self, text=f"Status: {status_text}", font=("Arial", 14))
         self.status_label.pack(side="left", padx=10, pady=5)
+
+        self.join_button = customtkinter.CTkButton(self, text="Join", command=on_join_room_click)
+        self.join_button.pack(side="right", padx=10, pady=5)
 
     def update_row(self, host: str, game_name: str, player_count: int, max_players: int, status: str):
         self.host = host

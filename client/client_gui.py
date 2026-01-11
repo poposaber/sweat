@@ -30,6 +30,7 @@ class ClientGUI:
                                     fetch_game_detail_callback=self._client_controller.fetch_game_detail, 
                                     download_callback=self._client_controller.download_game, 
                                     create_room_callback=self._client_controller.create_room, 
+                                    join_room_callback=self._client_controller.join_room,
                                     leave_room_callback=self._client_controller.leave_room,
                                     check_my_room_callback=self._client_controller.check_my_room, 
                                     fetch_room_list_callback=self._client_controller.fetch_room_list)
@@ -102,7 +103,7 @@ class ClientGUI:
         self.entry_view.login_page.focus()
         # self.status_label.configure(text="Connected")
 
-    def _on_event(self, event: Message, username: str | None):
+    def _on_event(self, event: Message):
         if self._state == ClientState.IN_LOBBY:
             match event.action:
                 case Action.ROOM_CREATED:
@@ -116,10 +117,13 @@ class ClientGUI:
                     updated_payload: RoomUpdatedEventPayload = event.payload
                     self.lobby_view.this_lobby_page.update_room(updated_payload.room_id, updated_payload.host_username, updated_payload.game_name, updated_payload.current_players, updated_payload.max_players, updated_payload.status)
                 case Action.MY_ROOM_UPDATED:
+                    # print("Received MY_ROOM_UPDATED event")
+                    username = self._client_controller.get_username()
+                    # print(f"username={username}")
                     if not username:
                         return
                     my_room_updated_payload: MyRoomUpdatedEventPayload = event.payload
-                    self.lobby_view.my_room_page.set_room_players(my_room_updated_payload.players, my_room_updated_payload.host_username, username)
+                    self.lobby_view.my_room_page.set_room_players(my_room_updated_payload.player_list, my_room_updated_payload.host_username, username)
     def _auto_connect(self):
         # self.status_label.configure(text="Connecting...")
         self._client_controller.connect(

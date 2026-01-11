@@ -20,6 +20,9 @@ class ClientController:
     def get_library_manager(self):
         return self._client.get_library_manager()
     
+    def get_username(self) -> str | None:
+        return self._client.get_username()
+    
     def _on_exception(self, e: Exception, on_error: Optional[Callable[[Exception], None]] = None):
         logger.exception(f"ClientController exception: {str(e)}")
         if on_error:
@@ -29,17 +32,34 @@ class ClientController:
                 on_error(e)
 
     def connect(self, *, on_result: Optional[Callable[[], None]] = None, on_error: Optional[Callable[[Exception], None]] = None,
-                start_events: bool = True, on_event: Optional[Callable[[Message, str | None], None]] = None, on_disconnect: Optional[Callable[[], None]] = None):
+                start_events: bool = True, on_event: Optional[Callable[[Message], None]] = None, on_disconnect: Optional[Callable[[], None]] = None):
         
         # Wrap on_disconnect to run on GUI thread if GUI exists
-        safe_on_disconnect = on_disconnect
-        if self._gui and on_disconnect:
-            g = self._gui
-            safe_on_disconnect = lambda: g.after(0, on_disconnect)
+        # safe_on_disconnect = on_disconnect
+        # safe_on_event = on_event
+        # if self._gui:
+        #     g = self._gui
+        #     if on_disconnect:
+        #         safe_on_disconnect = lambda: g.after(0, on_disconnect)
+        #     if on_event:
+        #         safe_on_event: Optional[Callable[[Message, str | None], None]] = lambda msg, un: g.after(0, lambda: on_event(msg, un))
+        def safe_on_disconnect():
+            if on_disconnect:
+                if self._gui:
+                    self._gui.after(0, on_disconnect)
+                else:
+                    on_disconnect()
 
+        def safe_on_event(msg: Message):
+            if on_event:
+                oe = on_event
+                if self._gui:
+                    self._gui.after(0, lambda msg=msg: oe(msg))
+                else:
+                    oe(msg)
         def _work():
             try:
-                self._client.connect(on_event=on_event, on_disconnect=safe_on_disconnect)
+                self._client.connect(on_event=safe_on_event, on_disconnect=safe_on_disconnect)
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:
@@ -262,6 +282,26 @@ class ClientController:
                         self._gui.after(0, lambda: cb_ok(result))
                     else:
                         cb_ok(result)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def join_room(self, 
+                  room_id: str,
+                  on_result: Optional[Callable[[], None]] = None, 
+                  on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, error = self._client.join_room(room_id)
+                if not success:
+                    raise Exception(error or "Join Room failed")
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
             except Exception as e:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()

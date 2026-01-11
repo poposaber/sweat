@@ -6,11 +6,12 @@ from ..slides.players_slide import PlayersSlide
 
 class ThisLobbyPage(customtkinter.CTkFrame):
     def __init__(self, master, 
-                 fetch_room_list_callback: Optional[Callable[[Callable[[list[tuple[str, str, str, int, int, str]]], None], Callable[[Exception], None]], None]] = None):
+                 fetch_room_list_callback: Optional[Callable[[Callable[[list[tuple[str, str, str, int, int, str]]], None], Callable[[Exception], None]], None]] = None, 
+                 on_join_room_click: Optional[Callable[[str], None]] = None):
         super().__init__(master)
         self.tab_bar = TabBar(self, self.on_tabbar_select)
         self.tab_bar.place_default()
-        self.rooms_slide = RoomsSlide(self, fetch_room_list_callback=fetch_room_list_callback)
+        self.rooms_slide = RoomsSlide(self, fetch_room_list_callback=fetch_room_list_callback, on_join_room_click=on_join_room_click)
         self.players_slide = PlayersSlide(self)
         self.tab_bar.add_tab("rooms", "Rooms", self.rooms_slide)
         self.tab_bar.add_tab("players", "Players", self.players_slide)

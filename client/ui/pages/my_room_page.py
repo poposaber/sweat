@@ -36,16 +36,16 @@ class MyRoomPage(customtkinter.CTkFrame):
         self.not_in_room_label.place(relx=0.5, rely=0.3, anchor=customtkinter.CENTER)
         self.my_room_detail_slide.reset()
 
-    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, players: list[str], max_players: int, username: str):
+    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, player_list: list[str], max_players: int, username: str):
         if in_room:
             self.switch_to_room(room_id, game_name, max_players)
-            self.set_room_players(players, host, username)
+            self.set_room_players(player_list, host, username)
         else:
             self.switch_to_no_room()
 
-    def set_room_players(self, players: list[str], host: str, username: str):
+    def set_room_players(self, player_list: list[str], host: str, username: str):
         self.my_room_detail_slide.clear_players()
-        for player_name in players:
+        for player_name in player_list:
             self.my_room_detail_slide.add_player(player_name, is_host=(player_name == host), is_you=(player_name == username))
         self.my_room_detail_slide.set_host_mode(host == username)
     

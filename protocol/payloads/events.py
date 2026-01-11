@@ -26,6 +26,6 @@ class RoomUpdatedEventPayload:
 class MyRoomUpdatedEventPayload:
     host_username: str
     game_name: str
-    players: list[str]
+    player_list: list[str]
     max_players: int
     status: str
