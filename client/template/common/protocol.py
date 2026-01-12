@@ -1,0 +1,3 @@
+PING = "PING"
+PONG = "PONG"
+EXIT = "EXIT"
