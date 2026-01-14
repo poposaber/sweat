@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 from typing import Dict, Optional, TypedDict
+import hashlib
 
 class InstalledGame(TypedDict):
     version: str
@@ -40,6 +41,29 @@ class LibraryManager:
     def get_installed_game(self, game_name: str) -> Optional[InstalledGame]:
         manifest = self._load_manifest()
         return manifest.get(game_name)
+    
+    def get_installed_game_sha256(self, game_name: str) -> Optional[str]:
+        game_info = self.get_installed_game(game_name)
+        if not game_info:
+            return None
+        install_folder = game_info.get("install_folder_name")
+        if not install_folder:
+            return None
+        install_path = os.path.join(self.library_root, install_folder)
+        if not os.path.exists(install_path):
+            return None
+        sha256_hash = hashlib.sha256()
+        for root, dirs, files in os.walk(install_path):
+            # Sort dirs in place to ensure consistent traversal order
+            dirs.sort()
+            for file in sorted(files):
+                if "__pycache__" in root:
+                    continue
+                file_path = os.path.join(root, file)
+                with open(file_path, "rb") as f:
+                    for byte_block in iter(lambda: f.read(4096), b""):
+                        sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
 
     def is_game_installed(self, game_name: str) -> bool:
         return self.get_installed_game(game_name) is not None

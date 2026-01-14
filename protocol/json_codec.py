@@ -21,6 +21,7 @@ from .payloads.game import *
 from .payloads.room import *
 
 from .payloads.events import *
+from .payloads.game_launch import *
 
 _PAYLOAD_MAP = {
     Action.LOGIN: Credential, 
@@ -37,6 +38,7 @@ _PAYLOAD_MAP = {
     Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkPayload,
     Action.DOWNLOAD_GAME_FINISH: DownloadGameFinishPayload,
     Action.CREATE_ROOM: CreateRoomPayload,
+    Action.JOIN_ROOM: JoinRoomPayload, 
     Action.LEAVE_ROOM: EmptyPayload,
     Action.CHECK_MY_ROOM: EmptyPayload,
     Action.FETCH_ROOM_LIST: EmptyPayload,
@@ -44,7 +46,11 @@ _PAYLOAD_MAP = {
     Action.ROOM_REMOVED: RoomRemovedEventPayload,
     Action.ROOM_UPDATED: RoomUpdatedEventPayload,
     Action.MY_ROOM_UPDATED: MyRoomUpdatedEventPayload,
-    Action.JOIN_ROOM: JoinRoomPayload,
+    
+    Action.START_GAME: EmptyPayload,
+    Action.GAME_CHECK: GameCheckEventPayload,
+    Action.GAME_CHECK_RESULT: GameCheckResultPayload,
+    Action.GAME_START_RESULT: GameStartResultEventPayload,
 }
 
 _RESPONSE_PAYLOAD_MAP = {
@@ -57,9 +63,11 @@ _RESPONSE_PAYLOAD_MAP = {
     Action.DOWNLOAD_GAME_INIT: DownloadGameInitResponsePayload,
     Action.DOWNLOAD_GAME_CHUNK: DownloadGameChunkResponsePayload,
     Action.CREATE_ROOM: CreateRoomResponsePayload,
+    Action.JOIN_ROOM: EmptyPayload,
     Action.CHECK_MY_ROOM: CheckMyRoomResponsePayload,
     Action.FETCH_ROOM_LIST: FetchRoomListResponsePayload,
-    Action.JOIN_ROOM: EmptyPayload,
+    
+    Action.GAME_CHECK_RESULT: EmptyPayload,
 }
 
 def encode(message: Message) -> bytes:

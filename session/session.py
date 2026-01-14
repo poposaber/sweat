@@ -35,7 +35,10 @@ class Session:
         try:
             data = encode_message(message)
             if self._trace_io:
-                logger.debug("TX %s", data.decode("utf-8"))
+                record = data.decode("utf-8")
+                if len(record) > 512:
+                    record = record[:512] + "...(truncated)"
+                logger.debug("TX %s", record)
             self._fsock.send(data)
         except InteractionTimeoutError as e:
             raise SessionTimeoutError("send_message timed out") from e
@@ -48,7 +51,10 @@ class Session:
             data = self._fsock.receive()
             message = decode_message(data)
             if self._trace_io:
-                logger.debug("RX %s", data.decode("utf-8"))
+                record = data.decode("utf-8")
+                if len(record) > 512:
+                    record = record[:512] + "...(truncated)"
+                logger.debug("RX %s", record)
             return message
         except InteractionTimeoutError as e:
             # 接收超時屬於「暫時無資料」，上層可選擇重試或忽略

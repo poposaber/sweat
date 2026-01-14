@@ -29,3 +29,12 @@ class MyRoomUpdatedEventPayload:
     player_list: list[str]
     max_players: int
     status: str
+
+@dataclass
+class GameCheckEventPayload:
+    game_name: str
+
+@dataclass
+class GameStartResultEventPayload:
+    game_name: str
+    port: int

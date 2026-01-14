@@ -33,7 +33,8 @@ class ClientGUI:
                                     join_room_callback=self._client_controller.join_room,
                                     leave_room_callback=self._client_controller.leave_room,
                                     check_my_room_callback=self._client_controller.check_my_room, 
-                                    fetch_room_list_callback=self._client_controller.fetch_room_list)
+                                    fetch_room_list_callback=self._client_controller.fetch_room_list, 
+                                    start_game_callback=self._client_controller.start_game)
         # Initially hide lobby page
 
         self.developer_view = DeveloperView(self._root, 
@@ -123,12 +124,32 @@ class ClientGUI:
                     if not username:
                         return
                     my_room_updated_payload: MyRoomUpdatedEventPayload = event.payload
-                    self.lobby_view.my_room_page.set_room_players(my_room_updated_payload.player_list, my_room_updated_payload.host_username, username)
+                    self.lobby_view.my_room_page.set_room(my_room_updated_payload.player_list, my_room_updated_payload.host_username, username, my_room_updated_payload.status)
     def _auto_connect(self):
-        # self.status_label.configure(text="Connecting...")
+
+        def on_error(e):
+            # messagebox.showerror("Connection Error", f"Could not connect to server: {e}\nRetrying...")
+            # Retry after delay?
+            pass
+
+        def on_disconnect():
+            if self._state != ClientState.DISCONNECTED:
+                messagebox.showwarning("Disconnected", "Lost connection to server.")
+                self._state = ClientState.DISCONNECTED
+                try:
+                    self._set_state(ClientState.DISCONNECTED)
+                except Exception:
+                    pass
+
+        def on_game_launch_error(error_msg: str):
+            messagebox.showerror("Game Launch Failed", error_msg)
+
         self._client_controller.connect(
             on_result=self._on_connected,
+            on_error=on_error,
+            on_disconnect=on_disconnect,
             on_event=self._on_event,
+            on_game_launch_error=on_game_launch_error
         )
 
     def _on_login_submit(self, username: str, password: str, role: str):

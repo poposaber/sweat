@@ -2,7 +2,7 @@ import logging
 import threading
 import random
 import string
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .errors import *
 from protocol.enums import RoomStatus
 
@@ -18,6 +18,7 @@ class Room:
     player_list: list[str]
     max_players: int
     status: RoomStatus = RoomStatus.WAITING
+    ready_player_set: set[str] = field(default_factory=set)
 
 class RoomManager:
     def __init__(self):
@@ -112,6 +113,7 @@ class RoomManager:
                 raise RoomNotFoundError(f"Room {room_id} not found")
             if username in room.player_list:
                 room.player_list.remove(username)
+                room.ready_player_set.discard(username)
                 logger.info(f"User {username} left room {room_id}")
                 if not room.player_list:
                     del self._rooms[room_id]
@@ -123,6 +125,44 @@ class RoomManager:
             else:
                 logger.warning(f"Leave room failed: user {username} not in room {room_id}")
                 raise PlayerNotInRoomError(f"User {username} is not in room {room_id}")
+            
+    def set_room_status(self, room_id: str, status: RoomStatus) -> None:
+        with self._room_player_lock:
+            room = self._rooms.get(room_id)
+            if not room:
+                logger.warning(f"Set room status failed: room_id={room_id} not found")
+                raise RoomNotFoundError(f"Room {room_id} not found")
+            room.status = status
+            logger.info(f"Room {room_id} status set to {status.name}")
+
+    def clear_room_player_ready(self, room_id: str) -> None:
+        with self._room_player_lock:
+            room = self._rooms.get(room_id)
+            if not room:
+                logger.warning(f"Clear ready status failed: room_id={room_id} not found")
+                raise RoomNotFoundError(f"Room {room_id} not found")
+            room.ready_player_set.clear()
+            logger.info(f"Cleared ready status for all players in room {room_id}")
+
+    def add_room_player_ready(self, room_id: str, username: str) -> None:
+        with self._room_player_lock:
+            room = self._rooms.get(room_id)
+            if not room:
+                logger.warning(f"Set player ready failed: room_id={room_id} not found")
+                raise RoomNotFoundError(f"Room {room_id} not found")
+            if username not in room.player_list:
+                logger.warning(f"Set player ready failed: user {username} not in room {room_id}")
+                raise PlayerNotInRoomError(f"User {username} is not in room {room_id}")
+            room.ready_player_set.add(username)
+            logger.info(f"User {username} set as ready in room {room_id}")
+
+    def is_player_all_ready(self, room_id: str) -> bool:
+        with self._room_player_lock:
+            room = self._rooms.get(room_id)
+            if not room:
+                logger.warning(f"Check all ready failed: room_id={room_id} not found")
+                raise RoomNotFoundError(f"Room {room_id} not found")
+            return len(room.ready_player_set) == len(room.player_list)
             
     def get_all_rooms(self) -> dict[str, Room]:
         with self._room_player_lock:

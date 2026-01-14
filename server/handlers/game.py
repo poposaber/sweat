@@ -3,7 +3,7 @@ import os
 import hashlib
 import zipfile
 import shutil
-from typing import Tuple, Any
+from typing import Tuple
 
 from protocol.payloads.game import (
     UploadGameInitPayload, UploadGameInitResponsePayload, 
@@ -194,20 +194,29 @@ def handle_upload_finish(
 
             # Calculate SHA256 of the generated client folder (contains client/ and common/) for the database
             client_folder_hash = hashlib.sha256()
-            for root, _, files in os.walk(client_folder):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    with open(file_path, "rb") as f:
-                        for byte_block in iter(lambda: f.read(4096), b""):
-                            client_folder_hash.update(byte_block)
-
-            if common_folder.exists():
-                for root, _, files in os.walk(common_folder):
-                    for file in files:
+            
+            def hash_folder_content(folder_path):
+                for root, dirs, files in os.walk(folder_path):
+                    dirs.sort()
+                    for file in sorted(files):
+                        if "__pycache__" in root:
+                             continue
                         file_path = os.path.join(root, file)
                         with open(file_path, "rb") as f:
                             for byte_block in iter(lambda: f.read(4096), b""):
                                 client_folder_hash.update(byte_block)
+
+            hash_folder_content(client_folder)
+            if common_folder.exists():
+                hash_folder_content(common_folder)
+
+            # if common_folder.exists():
+            #     for root, _, files in os.walk(common_folder):
+            #         for file in sorted(files):
+            #             file_path = os.path.join(root, file)
+            #             with open(file_path, "rb") as f:
+            #                 for byte_block in iter(lambda: f.read(4096), b""):
+            #                     client_folder_hash.update(byte_block)
             final_db_client_folder_sha256 = client_folder_hash.hexdigest()
 
             # Helper function to create the target zips
@@ -215,8 +224,11 @@ def handle_upload_finish(
                 with zipfile.ZipFile(target_path, 'w', zipfile.ZIP_DEFLATED) as z:
                     # A. Add source folder contents to the ROOT of the zip
                     #    e.g. client/main.py -> client/main.py (Structure Preserved)
-                    for root, _, files in os.walk(source_folder):
-                        for file in files:
+                    for root, dirs, files in os.walk(source_folder):
+                        dirs.sort()
+                        for file in sorted(files):
+                            if "__pycache__" in root:
+                                continue
                             file_path = os.path.join(root, file)
                             arcname = os.path.relpath(file_path, extract_folder) # preserve structure under source_folder to make sure game works
                             z.write(file_path, arcname)
@@ -224,8 +236,11 @@ def handle_upload_finish(
                     # B. Add common folder to 'common/' in the zip
                     #    e.g. common/consts.py -> common/consts.py
                     if common_folder.exists():
-                        for root, _, files in os.walk(common_folder):
-                            for file in files:
+                        for root, dirs, files in os.walk(common_folder):
+                            dirs.sort()
+                            for file in sorted(files):
+                                if "__pycache__" in root:
+                                    continue
                                 file_path = os.path.join(root, file)
                                 # We want the arcname to start with 'common/'
                                 # os.path.relpath(..., extract_dir) gives 'common/...'

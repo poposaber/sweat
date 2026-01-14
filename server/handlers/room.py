@@ -7,7 +7,7 @@ from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.room_manager import RoomManager
 from session.session import Session
-from protocol.payloads.events import RoomCreatedEventPayload, RoomRemovedEventPayload, RoomUpdatedEventPayload, MyRoomUpdatedEventPayload
+from protocol.payloads.events import RoomCreatedEventPayload
 from protocol.enums import Role, Action, RoomStatus
 from protocol.message import Message
 import server.infra.broadcaster as broadcaster
@@ -135,7 +135,7 @@ def handle_check_my_room(room_manager: RoomManager, session_user_map: SessionUse
         logger.info(f"Check my room attempt: user={username}, addr={addr}")
         room_id = room_manager.get_room_id_by_player(username)
         if not room_id:
-            return CheckMyRoomResponsePayload(in_room=False, room_id="", game_name="", host="", player_list=[], max_players=0), True, ""
+            return CheckMyRoomResponsePayload(in_room=False, room_id="", game_name="", host="", player_list=[], max_players=0, status=""), True, ""
         room = room_manager.get_room_by_room_id(room_id)
         if room:
             in_room = True
@@ -148,10 +148,10 @@ def handle_check_my_room(room_manager: RoomManager, session_user_map: SessionUse
         
         logger.info(f"Check my room success: user={username}, in_room={in_room}, room_id={room_id}")
 
-        return CheckMyRoomResponsePayload(in_room=in_room, room_id=room_id, game_name=game_name, host=host, player_list=players, max_players=max_players), True, ""
+        return CheckMyRoomResponsePayload(in_room=in_room, room_id=room_id, game_name=game_name, host=host, player_list=players, max_players=max_players, status=room.status.value), True, ""
     except Exception as e:
         logger.error(f"Check my room error: user={username}, error={str(e)}")
-        return CheckMyRoomResponsePayload(in_room=False, room_id="", game_name="", host="", player_list=[], max_players=0), False, str(e)
+        return CheckMyRoomResponsePayload(in_room=False, room_id="", game_name="", host="", player_list=[], max_players=0, status=""), False, str(e)
     
 def handle_fetch_room_list(room_manager: RoomManager, session_user_map: SessionUserMap, session: Session) -> tuple[FetchRoomListResponsePayload, bool, str]:
     addr = session.peer_address
@@ -180,3 +180,4 @@ def handle_fetch_room_list(room_manager: RoomManager, session_user_map: SessionU
     except Exception as e:
         logger.error(f"Fetch room list error: user={username}, error={str(e)}")
         return FetchRoomListResponsePayload(rooms=[]), False, str(e)
+

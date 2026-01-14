@@ -16,6 +16,7 @@ class CheckMyRoomResponsePayload:
     host: str
     player_list: list[str]
     max_players: int
+    status: str
 
 @dataclass
 class FetchRoomListResponsePayload:
@@ -24,3 +25,8 @@ class FetchRoomListResponsePayload:
 @dataclass
 class JoinRoomPayload:
     room_id: str
+
+# @dataclass
+# class StartGamePayload:
+#     room_id: str
+

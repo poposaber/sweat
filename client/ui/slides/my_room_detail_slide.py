@@ -6,7 +6,7 @@ from tkinter import messagebox
 class MyRoomDetailSlide(customtkinter.CTkFrame):
     def __init__(self, master, 
                  on_leave_callback: Optional[Callable[[], None]] = None, 
-                 start_game_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
+                 start_game_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
@@ -72,7 +72,6 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
         self.start_game_button.configure(state="disabled", text="Starting...")
         if self._start_game_callback:
             self._start_game_callback(
-                self._room_id,
                 self._on_start_game_success,
                 self._on_error
             )
@@ -84,11 +83,36 @@ class MyRoomDetailSlide(customtkinter.CTkFrame):
         messagebox.showerror("Error", str(error))
         self.start_game_button.configure(state="normal", text="Start Game")
 
-    def set_host_mode(self, is_host: bool):
-        if is_host:
-            self.start_game_button.configure(state="normal")
-        else:
-            self.start_game_button.configure(state="disabled")
+    def set_start_button(self, is_host: bool, status: str):
+        state = "normal" if (is_host and status == "waiting") else "disabled"
+        text = ""
+        match status:
+            case "waiting":
+                text = "Start Game"
+            case "starting":
+                text = "Starting..."
+            case "in_game":
+                text = "In Game"
+            case _:
+                text = "Start Game"
+        self.start_game_button.configure(state=state, text=text)
+
+    # def set_host_mode(self, is_host: bool):
+    #     if is_host:
+    #         self.start_game_button.configure(state="normal")
+    #     else:
+    #         self.start_game_button.configure(state="disabled")
+    
+    # def set_room_status(self, status: str):
+    #     match status:
+    #         case "waiting":
+    #             self.start_game_button.configure(text="Start Game")
+    #         case "starting":
+    #             self.start_game_button.configure(state="disabled", text="Starting...")
+    #         case "in_game":
+    #             self.start_game_button.configure(state="disabled", text="In Game")
+    #         case _:
+    #             self.start_game_button.configure(state="disabled", text="Start Game")
 
     def reset(self):
         self._room_id = ""

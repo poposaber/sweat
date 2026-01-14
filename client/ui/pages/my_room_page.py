@@ -6,9 +6,9 @@ from tkinter import messagebox
 
 class MyRoomPage(customtkinter.CTkFrame):
     def __init__(self, master, 
-                 check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str], int, str], None], Callable[[Exception], None]], None]] = None, 
+                 check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str], int, str,  str], None], Callable[[Exception], None]], None]] = None, 
                  leave_room_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None, 
-                 start_game_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
+                 start_game_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master)
         self._check_my_room_callback = check_my_room_callback
         self._leave_room_callback = leave_room_callback
@@ -36,18 +36,18 @@ class MyRoomPage(customtkinter.CTkFrame):
         self.not_in_room_label.place(relx=0.5, rely=0.3, anchor=customtkinter.CENTER)
         self.my_room_detail_slide.reset()
 
-    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, player_list: list[str], max_players: int, username: str):
+    def _on_check_my_room_success(self, in_room: bool, room_id: str, game_name: str, host: str, player_list: list[str], max_players: int, username: str, room_status: str):
         if in_room:
             self.switch_to_room(room_id, game_name, max_players)
-            self.set_room_players(player_list, host, username)
+            self.set_room(player_list, host, username, room_status)
         else:
             self.switch_to_no_room()
 
-    def set_room_players(self, player_list: list[str], host: str, username: str):
+    def set_room(self, player_list: list[str], host: str, username: str, room_status: str):
         self.my_room_detail_slide.clear_players()
         for player_name in player_list:
             self.my_room_detail_slide.add_player(player_name, is_host=(player_name == host), is_you=(player_name == username))
-        self.my_room_detail_slide.set_host_mode(host == username)
+        self.my_room_detail_slide.set_start_button(host == username, room_status)
     
     def _on_leave_room_success(self):
         self.switch_to_no_room()

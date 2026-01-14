@@ -42,11 +42,13 @@ class Message:
         )
     
     @classmethod
-    def event(cls, action: Action, payload):
+    def event(cls, action: Action, payload, ok: Optional[bool]=None, error: Optional[str]=None):
         return cls(
             type=MessageType.EVENT,
             action=action,
             payload=payload,
+            ok=ok,
+            error=error,
         )
 
     # def to_json(self) -> bytes:

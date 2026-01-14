@@ -8,6 +8,7 @@ from session.errors import SessionDisconnectedError
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.room_manager import RoomManager
+from server.infra.game_process_manager import GameProcessManager
 from protocol.enums import Role
 from server.api.room_event_publisher import broadcast_leave_room_event
 
@@ -21,7 +22,8 @@ class Server:
         self._db = Database()
         self._session_user_map = SessionUserMap()
         self._room_manager = RoomManager()
-        self._dispatcher = Dispatcher(self._db, self._session_user_map, self._room_manager)
+        self._game_process_manager = GameProcessManager()
+        self._dispatcher = Dispatcher(self._db, self._session_user_map, self._room_manager, self._game_process_manager)
         self._stop_event = threading.Event()
         self._threads: list[threading.Thread] = []
         # self._sessions: list[Session] = []

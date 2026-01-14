@@ -32,7 +32,8 @@ class ClientController:
                 on_error(e)
 
     def connect(self, *, on_result: Optional[Callable[[], None]] = None, on_error: Optional[Callable[[Exception], None]] = None,
-                start_events: bool = True, on_event: Optional[Callable[[Message], None]] = None, on_disconnect: Optional[Callable[[], None]] = None):
+                start_events: bool = True, on_event: Optional[Callable[[Message], None]] = None, on_disconnect: Optional[Callable[[], None]] = None, 
+                on_game_launch_error: Optional[Callable[[str], None]] = None):
         
         # Wrap on_disconnect to run on GUI thread if GUI exists
         # safe_on_disconnect = on_disconnect
@@ -57,9 +58,18 @@ class ClientController:
                     self._gui.after(0, lambda msg=msg: oe(msg))
                 else:
                     oe(msg)
+
+        def safe_on_game_launch_error(error_msg: str):
+            if on_game_launch_error:
+                gle = on_game_launch_error
+                if self._gui:
+                    self._gui.after(0, lambda err=error_msg: gle(err))
+                else:
+                    gle(error_msg)
+
         def _work():
             try:
-                self._client.connect(on_event=safe_on_event, on_disconnect=safe_on_disconnect)
+                self._client.connect(on_event=safe_on_event, on_disconnect=safe_on_disconnect, on_game_launch_error=safe_on_game_launch_error)
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:
@@ -326,7 +336,7 @@ class ClientController:
         threading.Thread(target=_work, daemon=True).start()
 
     def check_my_room(self, 
-                      on_result: Optional[Callable[[bool, str, str, str, list[str], int, str], None]] = None,
+                      on_result: Optional[Callable[[bool, str, str, str, list[str], int, str, str], None]] = None,
                       on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
@@ -335,14 +345,14 @@ class ClientController:
                     raise Exception(result or "Check My Room failed")
                 
                 assert isinstance(result, tuple)
-                in_room, room_id, game_name, host, players, max_players, username = result
+                in_room, room_id, game_name, host, players, max_players, status = result
                 
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:
-                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players, max_players, username))
+                        self._gui.after(0, lambda: cb_ok(in_room, room_id, game_name, host, players, max_players, self.get_username() or "", status))
                     else:
-                        cb_ok(in_room, room_id, game_name, host, players, max_players, username)
+                        cb_ok(in_room, room_id, game_name, host, players, max_players, self.get_username() or "", status)
             except Exception as e:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
@@ -363,6 +373,44 @@ class ClientController:
                         self._gui.after(0, lambda: cb_ok(result))
                     else:
                         cb_ok(result)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def start_game(self, 
+                   on_result: Optional[Callable[[], None]] = None,
+                   on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, error = self._client.start_game()
+                if not success:
+                    raise Exception(error or "Start Game failed")
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def send_game_check_result(self, game_name: str, version: str, sha256: str,
+                   on_result: Optional[Callable[[], None]] = None,
+                   on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, error = self._client.send_game_check_result(game_name, version, sha256)
+                if not success:
+                    raise Exception(error or "Send Game Check Result failed")
+                
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
             except Exception as e:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()

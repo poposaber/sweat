@@ -1,15 +1,21 @@
 import logging
 from client.infra.connector import Connector
 from client.infra.library_manager import LibraryManager
+from client.infra.game_launcher import GameLauncher
 from session.session import Session
-from client.api import auth, game, room
+from client.api import auth, game, room, game_launch
 from protocol.payloads import game as game_payloads
 from protocol.payloads import room as room_payloads
+from protocol.payloads import game_launch as game_launch_payloads
+from protocol.payloads import events as event_payloads
 from protocol.message import Message
+from protocol.enums import Action
 from typing import Callable
 import os
 
 NORMAL_TIMEOUT = 3.0  # seconds
+
+import threading
 
 class Client:
     def __init__(self, addr: tuple[str, int], trace_io: bool = False) -> None:
@@ -19,8 +25,32 @@ class Client:
         self._trace_io = bool(trace_io)
         self._username: str | None = None
         self._library_manager: LibraryManager | None = None
+        self._game_launcher: GameLauncher | None = None
 
-    def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message], None] | None = None, on_disconnect=None):
+    def _on_event(self, event: Message, on_other_event: Callable[[Message], None] | None, on_game_launch_error: Callable[[str], None] | None) -> None:
+        match event.action:
+            case Action.GAME_CHECK:
+                game_check_payload: event_payloads.GameCheckEventPayload = event.payload
+                # Run in thread to avoid blocking recv loop which causes deadlock when waiting for response
+                threading.Thread(target=self.handle_game_check, args=(game_check_payload.game_name,), daemon=True).start()
+            case Action.GAME_START_RESULT:
+                game_start_result_payload: event_payloads.GameStartResultEventPayload = event.payload
+                if event.ok:
+                    # Launch the game
+                    port = game_start_result_payload.port # Assuming the payload has port
+                    # The payload might just be a dict if not parsed to dataclass yet, checking json_codec. 
+                    # Assuming it is objects as per json_codec.py
+                    if not self.launch_game(game_start_result_payload.game_name, port):
+                         if on_game_launch_error:
+                             on_game_launch_error(f"Failed to launch game: {game_start_result_payload.game_name}")
+                else:
+                    if on_game_launch_error:
+                        on_game_launch_error(f"Game start failed: {event.error}")
+            case _:
+                if on_other_event:
+                    on_other_event(event)
+
+    def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message], None] | None = None, on_disconnect=None, on_game_launch_error: Callable[[str], None] | None = None):
         session = self._connector.connect(connect_timeout=connect_timeout)
         self._session = session
         self.settimeout(NORMAL_TIMEOUT)
@@ -28,7 +58,9 @@ class Client:
             session.set_trace_io(self._trace_io)
         except Exception:
             pass
-        self._session.start_recv_loop(on_event=on_event, on_disconnect=on_disconnect)
+        def on_event_wrapper(event: Message):
+            self._on_event(event, on_event, on_game_launch_error)
+        self._session.start_recv_loop(on_event=on_event_wrapper, on_disconnect=on_disconnect)
     
     def is_connected(self) -> bool:
         return self._session is not None
@@ -50,14 +82,25 @@ class Client:
     def set_library_manager_by_username(self, username: str) -> None:
         dest_folder_path = os.path.join("client", "games", username)
         self._library_manager = LibraryManager(dest_folder_path)
+        self._game_launcher = GameLauncher(dest_folder_path)
 
     def clear_username(self) -> None:
         self._username = None
         self._library_manager = None
+        self._game_launcher = None
 
     def get_library_manager(self) -> LibraryManager | None:
         return self._library_manager
-
+    
+    def launch_game(self, game_name: str, port: int) -> bool:
+        if not self._library_manager or not self._game_launcher:
+            raise RuntimeError("Library/Launcher not initialized")
+        
+        info = self._library_manager.get_installed_game(game_name)
+        if not info:
+            return False
+            
+        return self._game_launcher.launch_game(info['install_folder_name'], port, self._username or "")
     def get_username(self) -> str | None:
         return self._username
 
@@ -176,7 +219,7 @@ class Client:
         resp = room.check_my_room(self._session)
         if resp.ok:
             assert isinstance(resp.payload, room_payloads.CheckMyRoomResponsePayload)
-            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.player_list, resp.payload.max_players, self._username or "")
+            return True, (resp.payload.in_room, resp.payload.room_id, resp.payload.game_name, resp.payload.host, resp.payload.player_list, resp.payload.max_players, resp.payload.status)
         else:
             return False, resp.error
         
@@ -189,3 +232,32 @@ class Client:
             return True, resp.payload.rooms
         else:
             return False, resp.error
+        
+    def start_game(self) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game_launch.start_game(self._session)
+        assert resp.ok is not None
+        return resp.ok, resp.error
+    
+    def handle_game_check(self, game_name: str) -> None:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        if self._library_manager is None:
+            raise RuntimeError("Library manager is not initialized")
+        installed_game = self._library_manager.get_installed_game(game_name)
+        if not installed_game:
+            # Game not installed
+            version = ""
+            sha256 = ""
+        else:
+            version = installed_game["version"]
+            sha256 = self._library_manager.get_installed_game_sha256(game_name) or ""
+        self.send_game_check_result(game_name, version, sha256)
+    
+    def send_game_check_result(self, game_name: str, version: str, sha256: str) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game_launch.send_game_check_result(self._session, game_name, version, sha256)
+        assert resp.ok is not None
+        return resp.ok, resp.error

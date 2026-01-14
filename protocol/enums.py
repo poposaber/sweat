@@ -24,6 +24,8 @@ class Action(Enum):
     LEAVE_ROOM = 'room.leave'
     CHECK_MY_ROOM = 'room.check_my_room'
     FETCH_ROOM_LIST = 'room.fetch_list'
+    START_GAME = 'room.start_game'
+    GAME_CHECK_RESULT = 'game.check_result'
     # used in events
     ROOM_CREATED = 'room.created'
     ROOM_REMOVED = 'room.removed'
@@ -31,6 +33,9 @@ class Action(Enum):
     MY_ROOM_UPDATED = 'room.my_room_updated'
     ROOM_PLAYER_JOINED = 'room.player_joined'
     ROOM_PLAYER_LEFT = 'room.player_left'
+    GAME_CHECK = 'game.check'
+    GAME_START_RESULT = 'game.start_result'
+    
 
 class RoomStatus(Enum):
     WAITING = 'waiting'

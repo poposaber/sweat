@@ -3,21 +3,24 @@ from protocol.message import Message
 from server.handlers import auth as auth_handlers
 from server.handlers import game as game_handlers
 from server.handlers import room as room_handlers
+from server.handlers import game_launch as game_launch_handlers
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.upload_manager import UploadManager
 from server.infra.download_manager import DownloadManager
 from server.infra.room_manager import RoomManager
+from server.infra.game_process_manager import GameProcessManager
 from session.session import Session
 
 
 class Dispatcher:
-	def __init__(self, db: Database, session_user_map: SessionUserMap, room_manager: RoomManager):
+	def __init__(self, db: Database, session_user_map: SessionUserMap, room_manager: RoomManager, game_process_manager: GameProcessManager):
 		self._db = db
 		self._session_user_map = session_user_map
 		self._upload_manager = UploadManager()
 		self._download_manager = DownloadManager()
 		self._room_manager = room_manager
+		self._game_process_manager = game_process_manager
 
 	def dispatch(self, message: Message, session: Session) -> Message:
 		# Only handle requests; for non-request, echo payload and mark failed
@@ -67,6 +70,10 @@ class Dispatcher:
 				payload, ok, error = room_handlers.handle_check_my_room(self._room_manager, self._session_user_map, session)
 			case Action.FETCH_ROOM_LIST:
 				payload, ok, error = room_handlers.handle_fetch_room_list(self._room_manager, self._session_user_map, session)
+			case Action.START_GAME:
+				payload, ok, error = game_launch_handlers.handle_start_game(self._room_manager, self._game_process_manager, self._db, self._session_user_map, session)
+			case Action.GAME_CHECK_RESULT:
+				payload, ok, error = game_launch_handlers.handle_game_check_result(message.payload, self._room_manager, self._game_process_manager, self._db, self._session_user_map, session)
 			case _:
 				# Unknown action: echo payload, mark failed
 				payload, ok, error = message.payload, False, "Unknown action"
