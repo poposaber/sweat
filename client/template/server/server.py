@@ -1,7 +1,7 @@
 import socket
 import time
 import threading
-from ..common import protocol
+from common import protocol
 
 MAX_PLAYERS = 2
 
@@ -63,6 +63,7 @@ class Server:
                 # self._semaphore.release()
         while self._connection_count > 0:
             time.sleep(0.1)
+        print("GAME_END")
     def _client_loop(self, session: socket.socket, addr: tuple[str, int]):
         """Per-connection loop: receive, dispatch, respond until error or stop."""
         try:

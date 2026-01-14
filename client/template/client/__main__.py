@@ -1,25 +1,16 @@
 import argparse
 import sys
 from .client import Client
-
-# Try to import protocol from common
-try:
-    from ..common import protocol
-except ImportError:
-    # Fallback if running as script without package context (though -m recommended)
-    try:
-        from client.template.common import protocol
-    except ImportError:
-        print("Could not import protocol. Run from root with -m client.template.client")
-        sys.exit(1)
+from common import protocol
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8972)
+    parser.add_argument("--username", default="Player")
     args = parser.parse_args()
 
-    client = Client((args.host, args.port))
+    client = Client((args.host, args.port), args.username)
 
     try:
         client.connect()

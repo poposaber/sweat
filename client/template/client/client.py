@@ -1,15 +1,16 @@
 import socket
 
 class Client:
-    def __init__(self, addr: tuple[str, int]):
+    def __init__(self, addr: tuple[str, int], username: str):
         self._host = addr[0]
         self._port = addr[1]
+        self._username = username
         self._sock = None
 
     def connect(self):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((self._host, self._port))
-        print(f"Connected to {self._host}:{self._port}")
+        print(f"Connected to {self._host}:{self._port} as {self._username}")
 
     def send(self, message: str):
         if not self._sock:
