@@ -41,3 +41,6 @@ sweat.db
 # game files
 server/games
 client/games
+
+# running games cache
+server/running_games
