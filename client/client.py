@@ -41,8 +41,8 @@ class Client:
                     # The payload might just be a dict if not parsed to dataclass yet, checking json_codec. 
                     # Assuming it is objects as per json_codec.py
                     if not self.launch_game(game_start_result_payload.game_name, port):
-                         if on_game_launch_error:
-                             on_game_launch_error(f"Failed to launch game: {game_start_result_payload.game_name}")
+                        if on_game_launch_error:
+                            on_game_launch_error(f"Failed to launch game: {game_start_result_payload.game_name}")
                 else:
                     if on_game_launch_error:
                         on_game_launch_error(f"Game start failed: {event.error}")
@@ -99,8 +99,10 @@ class Client:
         info = self._library_manager.get_installed_game(game_name)
         if not info:
             return False
+        
+        host = self._addr[0]
             
-        return self._game_launcher.launch_game(info['install_folder_name'], port, self._username or "")
+        return self._game_launcher.launch_game(info['install_folder_name'], host, port, self._username or "")
     def get_username(self) -> str | None:
         return self._username
 

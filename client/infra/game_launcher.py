@@ -9,7 +9,7 @@ class GameLauncher:
     def __init__(self, library_root: str):
         self.library_root = library_root
 
-    def launch_game(self, install_folder_name: str, port: int, username: str) -> bool:
+    def launch_game(self, install_folder_name: str, host: str, port: int, username: str) -> bool:
         """
         Launches a game module from the specified install folder inside the library root.
         
@@ -28,7 +28,7 @@ class GameLauncher:
 
         # Command: python -m client [args...]
         # We need to set the cwd to the game folder so 'client' package is resolvable
-        cmd = [sys.executable, "-m", "client", "--port", str(port), "--username", username]
+        cmd = [sys.executable, "-m", "client", "--host", host, "--port", str(port), "--username", username]
         
         logger.info(f"Launching game from {game_path} with cmd: {cmd}")
         
