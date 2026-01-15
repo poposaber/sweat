@@ -40,7 +40,8 @@ class ClientGUI:
         self.developer_view = DeveloperView(self._root, 
                                             logout_callback=self.logout, 
                                             upload_callback=self._on_upload_submit,
-                                            my_works_callback=self._on_my_works_click)
+                                            my_works_callback=self._on_my_works_click, 
+                                            create_template_callback=self._client_controller.create_game_template)
 
         self._state_dict = {
             ClientState.DISCONNECTED: self.entry_view, 

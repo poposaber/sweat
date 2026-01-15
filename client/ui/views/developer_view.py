@@ -9,7 +9,8 @@ class DeveloperView(ctk.CTkFrame):
     def __init__(self, master, 
                  logout_callback: Optional[Callable[[], None]] = None, 
                  upload_callback: Optional[Callable[[str, str, int, int, str], None]] = None, 
-                 my_works_callback: Optional[Callable[[], None]] = None):
+                 my_works_callback: Optional[Callable[[], None]] = None, 
+                 create_template_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master)
 
         # ctk.CTkLabel(self, text="Developer View").place(relx=0.5, rely=0.3, anchor=ctk.CENTER)
@@ -18,7 +19,7 @@ class DeveloperView(ctk.CTkFrame):
         #     command=logout_callback
         # ).place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
         self._my_works_callback = my_works_callback
-        self.my_works_page = MyWorksPage(self)
+        self.my_works_page = MyWorksPage(self, create_template_callback=create_template_callback)
         self.upload_page = UploadPage(self, on_upload_callback=upload_callback)
         self.account_page = AccountPage(self, logout_callback=logout_callback)
         self.tab_bar = TabBar(self, command=self._on_tabbar_click)

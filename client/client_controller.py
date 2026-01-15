@@ -5,12 +5,14 @@ import threading
 import logging
 from protocol.enums import Role
 from protocol.message import Message
+from .infra.duplicator import Duplicator
 
 logger = logging.getLogger(__name__)
 
 class ClientController:
     def __init__(self, addr: tuple[str, int], gui: Optional[CTk] = None, trace_io: bool = False):
         self._client = Client(addr, trace_io=trace_io)
+        self._duplicator = Duplicator()
         self._gui = gui
 
     def set_gui(self, gui: CTk):
@@ -111,6 +113,22 @@ class ClientController:
                 if not success:
                     raise Exception(error or "Registration failed")
 
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
+    def create_game_template(self, destination_path: str, 
+                             on_result: Optional[Callable[[], None]] = None,
+                             on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                self._duplicator.duplicate(destination_path)
                 cb_ok = on_result
                 if cb_ok:
                     if self._gui:
