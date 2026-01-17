@@ -158,6 +158,16 @@ def handle_game_check_result(payload: GameCheckResultPayload, room_manager: Room
         )
         room_update_msg = Message.event(Action.ROOM_UPDATED, room_update_event_payload)
         broadcaster.broadcast_to_players(session_user_map, room_update_msg, exclude_usernames=room.player_list)
+        game_start_failed_msg = Message.event(Action.GAME_START_RESULT, GameStartResultEventPayload(game_name=room.game_name, port=0), ok=False, error=f"Game version mismatch for user {username}")
+        broadcaster.multicast_to_players(session_user_map, game_start_failed_msg, usernames=room.player_list)
+        my_room_updated_msg = Message.event(Action.MY_ROOM_UPDATED, MyRoomUpdatedEventPayload(
+            host_username=room.host,
+            game_name=room.game_name,
+            player_list=room.player_list,
+            max_players=room.max_players,
+            status=room.status.value
+        ))
+        broadcaster.multicast_to_players(session_user_map, my_room_updated_msg, usernames=room.player_list)
         return EmptyPayload(), False, f"Game version mismatch for user {username}"
 
     expected_sha256 = game_info[6]  # client_folder_sha256
@@ -174,6 +184,16 @@ def handle_game_check_result(payload: GameCheckResultPayload, room_manager: Room
         )
         room_update_msg = Message.event(Action.ROOM_UPDATED, room_update_event_payload)
         broadcaster.broadcast_to_players(session_user_map, room_update_msg, exclude_usernames=room.player_list)
+        game_start_failed_msg = Message.event(Action.GAME_START_RESULT, GameStartResultEventPayload(game_name=room.game_name, port=0), ok=False, error=f"Game integrity check failed for user {username}")
+        broadcaster.multicast_to_players(session_user_map, game_start_failed_msg, usernames=room.player_list)
+        my_room_updated_msg = Message.event(Action.MY_ROOM_UPDATED, MyRoomUpdatedEventPayload(
+            host_username=room.host,
+            game_name=room.game_name,
+            player_list=room.player_list,
+            max_players=room.max_players,
+            status=room.status.value
+        ))
+        broadcaster.multicast_to_players(session_user_map, my_room_updated_msg, usernames=room.player_list)
         return EmptyPayload(), False, f"Game integrity check failed for user {username}"
 
     # Mark player as ready
@@ -204,6 +224,16 @@ def handle_game_check_result(payload: GameCheckResultPayload, room_manager: Room
             )
             room_update_msg = Message.event(Action.ROOM_UPDATED, room_update_event_payload)
             broadcaster.broadcast_to_players(session_user_map, room_update_msg, exclude_usernames=room.player_list)
+            game_start_failed_msg = Message.event(Action.GAME_START_RESULT, GameStartResultEventPayload(game_name=room.game_name, port=0), ok=False, error="Game server files not found")
+            broadcaster.multicast_to_players(session_user_map, game_start_failed_msg, usernames=room.player_list)
+            my_room_updated_msg = Message.event(Action.MY_ROOM_UPDATED, MyRoomUpdatedEventPayload(
+                host_username=room.host,
+                game_name=room.game_name,
+                player_list=room.player_list,
+                max_players=room.max_players,
+                status=room.status.value
+            ))
+            broadcaster.multicast_to_players(session_user_map, my_room_updated_msg, usernames=room.player_list)
             return EmptyPayload(), False, "Game server files not found"
 
         def _on_game_end_wrapper(rid: str):
@@ -223,6 +253,16 @@ def handle_game_check_result(payload: GameCheckResultPayload, room_manager: Room
             )
             room_update_msg = Message.event(Action.ROOM_UPDATED, room_update_event_payload)
             broadcaster.broadcast_to_players(session_user_map, room_update_msg, exclude_usernames=room.player_list)
+            game_start_failed_msg = Message.event(Action.GAME_START_RESULT, GameStartResultEventPayload(game_name=room.game_name, port=0), ok=False, error=f"Failed to start server: {error}")
+            broadcaster.multicast_to_players(session_user_map, game_start_failed_msg, usernames=room.player_list)
+            my_room_updated_msg = Message.event(Action.MY_ROOM_UPDATED, MyRoomUpdatedEventPayload(
+                host_username=room.host,
+                game_name=room.game_name,
+                player_list=room.player_list,
+                max_players=room.max_players,
+                status=room.status.value
+            ))
+            broadcaster.multicast_to_players(session_user_map, my_room_updated_msg, usernames=room.player_list)
             return EmptyPayload(), False, f"Failed to start server: {error}"
         
         # All ready, Broadcast GAME_START_RESULT
