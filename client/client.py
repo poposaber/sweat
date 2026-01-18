@@ -79,12 +79,12 @@ class Client:
     def set_username(self, username: str) -> None:
         self._username = username
 
-    def set_library_manager_by_username(self, username: str) -> None:
+    def set_library_manager_and_game_launcher_by_username(self, username: str) -> None:
         dest_folder_path = os.path.join("client", "games", username)
         self._library_manager = LibraryManager(dest_folder_path)
         self._game_launcher = GameLauncher(dest_folder_path)
 
-    def clear_username(self) -> None:
+    def clear_all(self) -> None:
         self._username = None
         self._library_manager = None
         self._game_launcher = None

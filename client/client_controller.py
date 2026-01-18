@@ -95,7 +95,7 @@ class ClientController:
                 if cb_ok:
                     self._client.set_username(username)
                     if role == Role.PLAYER.value:
-                        self._client.set_library_manager_by_username(username)
+                        self._client.set_library_manager_and_game_launcher_by_username(username)
                     if self._gui:
                         self._gui.after(0, cb_ok)
                     else:
@@ -442,7 +442,7 @@ class ClientController:
                     raise Exception(error or "Logout failed")
                 cb_ok = on_result
                 if cb_ok:
-                    self._client.clear_username()
+                    self._client.clear_all()
                     if self._gui:
                         self._gui.after(0, cb_ok)
                     else:
