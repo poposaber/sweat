@@ -17,6 +17,8 @@ class GameProcessManager:
         self._run_dir = os.path.abspath(base_run_dir)
         self._running_processes: Dict[str, subprocess.Popen] = {} # room_id -> Popen
         self._port_map: Dict[str, int] = {} # room_id -> port
+        self._starting_rooms: set[str] = set() # room_id
+        self._lock = threading.Lock()
         
         # Ensure run dir exists
         if os.path.exists(self._run_dir):
@@ -36,14 +38,23 @@ class GameProcessManager:
         Starts a game server for a specific room.
         Returns: (success, port, error_message)
         """
-        if room_id in self._running_processes:
-            # Check if still running
-            proc = self._running_processes[room_id]
-            if proc.poll() is None:
-                return False, 0, "Game server already running for this room"
-            else:
-                # Cleanup dead process
-                self.stop_game_server(room_id)
+        with self._lock:
+            if room_id in self._starting_rooms:
+                logger.warning(f"Start game blocked: Room {room_id} is already starting")
+                return True, 0, "" # Threat as success but do nothing (idempotent)
+            
+            if room_id in self._running_processes:
+                # Check if still running
+                proc = self._running_processes[room_id]
+                if proc.poll() is None:
+                    logger.warning(f"Start game blocked: Room {room_id} has running process")
+                    return True, 0, "" # Threat as success (already running)
+                else:
+                    # Cleanup dead process
+                    logger.info(f"Cleaning up dead process for room {room_id} before restart")
+                    self.stop_game_server(room_id)
+            
+            self._starting_rooms.add(room_id)
 
         try:
             # 1. Find free port
@@ -131,25 +142,30 @@ class GameProcessManager:
             if proc.poll() is not None:
                 return False, 0, f"Game server exited immediately with code {proc.returncode}"
             
-            self._running_processes[room_id] = proc
-            self._port_map[room_id] = port
+            with self._lock:
+                self._running_processes[room_id] = proc
+                self._port_map[room_id] = port
             
             return True, port, ""
 
         except Exception as e:
             logger.error(f"Failed to start game server for room {room_id}: {e}")
             return False, 0, str(e)
+        finally:
+             with self._lock:
+                 self._starting_rooms.discard(room_id)
 
     def stop_game_server(self, room_id: str):
-        if room_id in self._running_processes:
-            proc = self._running_processes[room_id]
-            if proc.poll() is None:
-                logger.info(f"Stopping game server for room {room_id}")
-                proc.terminate()
-                try:
-                    proc.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
+        with self._lock:
+            if room_id in self._running_processes:
+                proc = self._running_processes[room_id]
+                if proc.poll() is None:
+                    logger.info(f"Stopping game server for room {room_id}")
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
             
             del self._running_processes[room_id]
             if room_id in self._port_map:

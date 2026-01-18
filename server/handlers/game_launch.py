@@ -201,12 +201,6 @@ def handle_game_check_result(payload: GameCheckResultPayload, room_manager: Room
     logger.info(f"User {username} ready for game in room {room_id}. ({len(room.ready_player_set)}/{len(room.player_list)})")
 
     if room_manager.is_player_all_ready(room_id):
-        # Check if port is already allocated or process running (safeguard)
-        # Note: Accessing private member _running_processes is not ideal but effective for this check
-        if room_id in game_process_manager._running_processes:
-             logger.warning(f"Game process already running for room {room_id}, skipping start.")
-             return EmptyPayload(), True, ""
-
         game_file_path = game_info[7]
         server_zip_path = os.path.join(game_file_path, "server.zip")
 
@@ -266,6 +260,8 @@ def handle_game_check_result(payload: GameCheckResultPayload, room_manager: Room
             return EmptyPayload(), False, f"Failed to start server: {error}"
         
         # All ready, Broadcast GAME_START_RESULT
+        if port == 0:
+            return EmptyPayload(), True, "Invalid port received from game process manager" # means that game thread is starting (race condition), but we treat it as success here
              
         room_manager.set_room_status(room_id, RoomStatus.IN_GAME)
         
