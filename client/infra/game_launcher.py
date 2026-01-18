@@ -35,13 +35,22 @@ class GameLauncher:
         try:
             # We use Popen to launch it detached (non-blocking)
             # In a real scenario, we might want to track this process ID
-            subprocess.Popen(
-                cmd,
-                cwd=game_path,
-                # We don't pipe stdout/stderr since user said no monitoring needed,
-                # letting it inherit or detach is fine.
-                creationflags=subprocess.CREATE_NEW_CONSOLE # Optional: for Windows to open new window
-            )
+            if os.name == 'nt':
+                subprocess.Popen(
+                    cmd,
+                    cwd=game_path,
+                    # We don't pipe stdout/stderr since user said no monitoring needed,
+                    # letting it inherit or detach is fine.
+                    creationflags=subprocess.CREATE_NEW_CONSOLE # Optional: for Windows to open new window
+                )
+            else:
+                subprocess.Popen(
+                    cmd,
+                    cwd=game_path,
+                    # We don't pipe stdout/stderr since user said no monitoring needed,
+                    # letting it inherit or detach is fine.
+                    start_new_session=True # Detach from parent terminal
+                )
             return True
         except Exception as e:
             logger.error(f"Failed to launch game: {e}")
