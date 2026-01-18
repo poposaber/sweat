@@ -12,6 +12,7 @@ from protocol.enums import Role, Action, RoomStatus
 from protocol.message import Message
 import server.infra.broadcaster as broadcaster
 from server.api import room_event_publisher as rep
+from server.infra.game_process_manager import GameProcessManager
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ def handle_join_room(payload: JoinRoomPayload, room_manager: RoomManager, sessio
         logger.error(f"Join room error: user={username}, error={str(e)}")
         return EmptyPayload(), False, str(e)
     
-def handle_leave_room(room_manager: RoomManager, session_user_map: SessionUserMap, session: Session) -> tuple[EmptyPayload, bool, str]:
+def handle_leave_room(room_manager: RoomManager, game_process_manager: GameProcessManager, session_user_map: SessionUserMap, session: Session) -> tuple[EmptyPayload, bool, str]:
     addr = session.peer_address
     user_info = session_user_map.get_user_by_session(session)
     try:
@@ -107,7 +108,8 @@ def handle_leave_room(room_manager: RoomManager, session_user_map: SessionUserMa
             logger.warning(f"Leave room failed: user={username} is not in any room, addr={addr}")
             raise Exception("You are not in any room")
         
-        room_manager.remove_player_from_room(room_id, username)
+
+        room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.clean_cache)
         
         rep.broadcast_leave_room_event(room_manager, session_user_map, username, room_id)
             

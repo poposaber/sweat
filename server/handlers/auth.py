@@ -9,6 +9,7 @@ from session.session import Session
 from protocol.enums import Role
 from protocol.message import Message
 from server.api.room_event_publisher import broadcast_leave_room_event
+from server.infra.game_process_manager import GameProcessManager
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ def handle_register(payload: Credential, db: Database, session: Session) -> tupl
 	return payload, True, None
 
 
-def handle_logout(payload: EmptyPayload, room_manager: RoomManager, session_user_map: SessionUserMap, session: Session) -> tuple[EmptyPayload, bool, str | None]:
+def handle_logout(room_manager: RoomManager, game_process_manager: GameProcessManager, session_user_map: SessionUserMap, session: Session) -> tuple[EmptyPayload, bool, str | None]:
 	addr = session.peer_address
 	logger.info(f"Logout attempt: addr={addr}")
 
@@ -76,7 +77,7 @@ def handle_logout(payload: EmptyPayload, room_manager: RoomManager, session_user
 		if role == Role.PLAYER:
 			room_id = room_manager.get_room_id_by_player(username)
 			if room_id:
-				room_manager.remove_player_from_room(room_id, username)
+				room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.clean_cache)
 				logger.info(f"User {username} removed from room {room_id} on logout")
 				# broadcast
 				broadcast_leave_room_event(room_manager, session_user_map, username, room_id)

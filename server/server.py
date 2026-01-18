@@ -78,6 +78,9 @@ class Server:
         finally:
             self._cleanup_session(session)
 
+    # def _clean_running_games_cache(self, room_id: str):
+    #     self._game_process_manager.clean_cache(room_id)
+
     def _cleanup_session(self, session: Session):
         userinfo = self._session_user_map.get_user_by_session(session)
         if userinfo:
@@ -86,7 +89,7 @@ class Server:
             if role == Role.PLAYER:
                 room_id = self._room_manager.get_room_id_by_player(username)
                 if room_id:
-                    self._room_manager.remove_player_from_room(room_id, username)
+                    self._room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=self._game_process_manager.clean_cache)
                     broadcast_leave_room_event(self._room_manager, self._session_user_map, username, room_id)
                     logger.info(f"User {username} removed from room {room_id} on session cleanup")
         self._session_user_map.remove_session(session)

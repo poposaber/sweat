@@ -39,7 +39,7 @@ class Dispatcher:
 			case Action.REGISTER:
 				payload, ok, error = auth_handlers.handle_register(message.payload, self._db, session)
 			case Action.LOGOUT:
-				payload, ok, error = auth_handlers.handle_logout(message.payload, self._room_manager, self._session_user_map, session)
+				payload, ok, error = auth_handlers.handle_logout(self._room_manager, self._game_process_manager, self._session_user_map, session)
 			case Action.UPLOAD_GAME_INIT:
 				payload, ok, error = game_handlers.handle_upload_init(message.payload, self._db, self._upload_manager, self._session_user_map, session)
 			case Action.UPLOAD_GAME_CHUNK:
@@ -65,7 +65,7 @@ class Dispatcher:
 			case Action.JOIN_ROOM:
 				payload, ok, error = room_handlers.handle_join_room(message.payload, self._room_manager, self._session_user_map, session)
 			case Action.LEAVE_ROOM:
-				payload, ok, error = room_handlers.handle_leave_room(self._room_manager, self._session_user_map, session)
+				payload, ok, error = room_handlers.handle_leave_room(self._room_manager, self._game_process_manager, self._session_user_map, session)
 			case Action.CHECK_MY_ROOM:
 				payload, ok, error = room_handlers.handle_check_my_room(self._room_manager, self._session_user_map, session)
 			case Action.FETCH_ROOM_LIST:

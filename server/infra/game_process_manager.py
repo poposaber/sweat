@@ -173,3 +173,8 @@ class GameProcessManager:
         # if room_id in self._running_processes:
         #     return self._port_map.get(room_id), self._running_processes[room_id]
         # return None
+
+    def clean_cache(self, room_id: str):
+        room_run_dir = os.path.join(self._run_dir, room_id)
+        if os.path.exists(room_run_dir):
+            shutil.rmtree(room_run_dir)

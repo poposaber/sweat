@@ -5,6 +5,7 @@ import string
 from dataclasses import dataclass, field
 from .errors import *
 from protocol.enums import RoomStatus
+from typing import Optional, Callable
 
 ROOM_ID_GENERATION_MAX_ATTEMPTS = 36 ** 5 # 60,466,176
 ROOM_ID_LENGTH = 5
@@ -105,7 +106,7 @@ class RoomManager:
             logger.info(f"User {username} added to room {room_id}")
 
 
-    def remove_player_from_room(self, room_id: str, username: str) -> None:
+    def remove_player_from_room(self, room_id: str, username: str, on_delete_room_callback: Optional[Callable[[str], None]] = None) -> None:
         with self._room_player_lock:
             room = self._rooms.get(room_id)
             if not room:
@@ -118,6 +119,8 @@ class RoomManager:
                 if not room.player_list:
                     del self._rooms[room_id]
                     logger.info(f"Room {room_id} deleted as it became empty")
+                    if on_delete_room_callback:
+                        on_delete_room_callback(room_id)
                 elif username == room.host:
                     room.host = room.player_list[0]
                     logger.info(f"Host of room {room_id} changed to {room.host}")
