@@ -141,12 +141,13 @@ class ClientGUI:
         def on_disconnect():
             if self._state != ClientState.DISCONNECTED:
                 messagebox.showwarning("Disconnected", "Lost connection to server.")
-                self.disconnected_view.set_state(DisconnectedViewState.DISCONNECTED)
-                self._state = ClientState.DISCONNECTED
+                self.disconnected_view.set_state(DisconnectedViewState.RECONNECTING)
+                # self._state = ClientState.DISCONNECTED
                 try:
                     self._set_state(ClientState.DISCONNECTED)
                 except Exception:
                     pass
+                self._auto_connect()
 
         def on_game_launch_error(error_msg: str):
             messagebox.showerror("Game Launch Failed", error_msg)
