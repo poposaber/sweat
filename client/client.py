@@ -202,9 +202,13 @@ class Client:
         else:
             return False, resp.error
         
-    def join_room(self, room_id: str) -> tuple[bool, str | None]:
+    def join_room(self, room_id: str, game_name: str) -> tuple[bool, str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
+        if self._library_manager is None:
+            raise RuntimeError("Library manager is not initialized")
+        if not self._library_manager.get_installed_game(game_name):
+            return False, "Game not installed"
         resp = room.join_room(self._session, room_id)
         assert resp.ok is not None
         return resp.ok, resp.error

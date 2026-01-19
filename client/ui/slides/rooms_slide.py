@@ -6,7 +6,7 @@ from ..components.room_list_row_container import RoomListRowContainer
 class RoomsSlide(customtkinter.CTkFrame):
     def __init__(self, master, 
                  fetch_room_list_callback: Optional[Callable[[Callable[[list[tuple[str, str, str, int, int, str]]], None], Callable[[Exception], None]], None]] = None, 
-                 on_join_room_click: Optional[Callable[[str], None]] = None):
+                 on_join_room_click: Optional[Callable[[str, str], None]] = None):
         super().__init__(master, fg_color="transparent")
         self._fetch_room_list_callback = fetch_room_list_callback
         self._on_join_room_click = on_join_room_click
@@ -21,13 +21,13 @@ class RoomsSlide(customtkinter.CTkFrame):
             )
 
     def _on_fetch_room_list_success(self, rooms: list[tuple[str, str, str, int, int, str]]):
-        def button_callback(room_id: str):
+        def button_callback(room_id: str, game_name: str):
             if self._on_join_room_click:
-                self._on_join_room_click(room_id)
+                self._on_join_room_click(room_id, game_name)
         
         # Explicit type hint to satisfy the list variance check
         room_with_callbacks: list[tuple[str, str, str, int, int, str, Optional[Callable[[], None]]]] = [
-            (room_id, host, game_name, players, max_players, status, lambda rid=room_id: button_callback(rid))
+            (room_id, host, game_name, players, max_players, status, lambda rid=room_id, gname=game_name: button_callback(rid, gname))
             for room_id, host, game_name, players, max_players, status in rooms
         ]
         self.room_list_container.set_room_rows(room_with_callbacks)

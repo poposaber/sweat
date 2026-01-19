@@ -315,12 +315,12 @@ class ClientController:
         threading.Thread(target=_work, daemon=True).start()
 
     def join_room(self, 
-                  room_id: str,
+                  room_id: str, game_name: str,
                   on_result: Optional[Callable[[], None]] = None, 
                   on_error: Optional[Callable[[Exception], None]] = None):
         def _work():
             try:
-                success, error = self._client.join_room(room_id)
+                success, error = self._client.join_room(room_id, game_name)
                 if not success:
                     raise Exception(error or "Join Room failed")
                 

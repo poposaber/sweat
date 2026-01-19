@@ -16,7 +16,7 @@ class LobbyView(ctk.CTkFrame):
                  fetch_game_detail_callback: Optional[Callable[[str, Callable[[str, str, int, int, str], None], Callable[[Exception], None]], None]] = None, 
                  download_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None], Callable[[int, int], None]], None]] = None, 
                  create_room_callback: Optional[Callable[[str, Callable[[str], None], Callable[[Exception], None]], None]] = None, 
-                 join_room_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None,
+                 join_room_callback: Optional[Callable[[str, str, Callable[[], None], Callable[[Exception], None]], None]] = None,
                  leave_room_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None,
                  check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str], int, str, str], None], Callable[[Exception], None]], None]] = None,
                  fetch_room_list_callback: Optional[Callable[[Callable[[list[tuple[str, str, str, int, int, str]]], None], Callable[[Exception], None]], None]] = None, 
@@ -64,10 +64,10 @@ class LobbyView(ctk.CTkFrame):
                 self._on_error
             )
 
-    def _on_join_room_click(self, room_id: str):
+    def _on_join_room_click(self, room_id: str, game_name: str):
         if self._join_room_callback:
             self._join_room_callback(
-                room_id,
+                room_id, game_name,
                 self._on_join_room_success,
                 self._on_error
             )
