@@ -14,6 +14,7 @@ from typing import Callable
 import os
 
 NORMAL_TIMEOUT = 3.0  # seconds
+MAX_CONNECT_ATTEMPTS = 3
 
 import threading
 
@@ -51,7 +52,7 @@ class Client:
                     on_other_event(event)
 
     def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message], None] | None = None, on_disconnect=None, on_game_launch_error: Callable[[str], None] | None = None):
-        session = self._connector.connect(connect_timeout=connect_timeout)
+        session = self._connector.connect(connect_timeout=connect_timeout, max_attempts=MAX_CONNECT_ATTEMPTS)
         self._session = session
         self.settimeout(NORMAL_TIMEOUT)
         try:

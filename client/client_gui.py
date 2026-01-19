@@ -9,6 +9,7 @@ from protocol.enums import Role
 from protocol.message import Message
 from protocol.enums import Action
 from protocol.payloads.events import *
+from .ui.views.disconnected_view import DisconnectedView, DisconnectedViewState
 
 class ClientGUI:
     def __init__(self, root: customtkinter.CTk, client_controller: ClientController):
@@ -17,6 +18,10 @@ class ClientGUI:
         self._root = root
         self._root.title("Client GUI")
         self._root.geometry("350x450")
+
+        # disconnected page embedded
+        self.disconnected_view = DisconnectedView(self._root, reconnect_callback=self._auto_connect)
+        # self.disconnected_view.pack(pady=10)
 
         # Login page embedded
         self.entry_view = EntryView(self._root,
@@ -36,6 +41,7 @@ class ClientGUI:
                                     fetch_room_list_callback=self._client_controller.fetch_room_list, 
                                     start_game_callback=self._client_controller.start_game)
         # Initially hide lobby page
+        self.lobby_view.place_forget()
 
         self.developer_view = DeveloperView(self._root, 
                                             logout_callback=self.logout, 
@@ -44,7 +50,7 @@ class ClientGUI:
                                             create_template_callback=self._client_controller.create_game_template)
 
         self._state_dict = {
-            ClientState.DISCONNECTED: self.entry_view, 
+            ClientState.DISCONNECTED: self.disconnected_view, 
             ClientState.LOGGED_OUT: self.entry_view,
             ClientState.IN_LOBBY: self.lobby_view, 
             ClientState.IN_DEVELOPMENT: self.developer_view,
@@ -62,6 +68,7 @@ class ClientGUI:
             pass
         self._root.protocol("WM_DELETE_WINDOW", self._on_close)
         # Auto-connect after GUI is constructed; controller should have GUI bound before mainloop runs
+        self.disconnected_view.set_state(DisconnectedViewState.RECONNECTING)
         self._root.after(0, self._auto_connect)
 
     def _on_upload_submit(self, game_name: str, version: str, min_players: int, max_players: int, file_path: str):
@@ -129,13 +136,12 @@ class ClientGUI:
     def _auto_connect(self):
 
         def on_error(e):
-            # messagebox.showerror("Connection Error", f"Could not connect to server: {e}\nRetrying...")
-            # Retry after delay?
-            pass
+            self.disconnected_view.set_state(DisconnectedViewState.DISCONNECTED)
 
         def on_disconnect():
             if self._state != ClientState.DISCONNECTED:
                 messagebox.showwarning("Disconnected", "Lost connection to server.")
+                self.disconnected_view.set_state(DisconnectedViewState.DISCONNECTED)
                 self._state = ClientState.DISCONNECTED
                 try:
                     self._set_state(ClientState.DISCONNECTED)
