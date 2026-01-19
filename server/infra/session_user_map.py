@@ -67,6 +67,9 @@ class SessionUserMap:
     def get_all_player_sessions(self) -> list[Session]:
         return self._role_bijection_map[Role.PLAYER].get_all_key1s()
     
+    def get_all_player_usernames(self) -> list[str]:
+        return self._role_bijection_map[Role.PLAYER].get_all_key2s()
+    
     def get_all_developer_sessions(self) -> list[Session]:
         return self._role_bijection_map[Role.DEVELOPER].get_all_key1s()
         

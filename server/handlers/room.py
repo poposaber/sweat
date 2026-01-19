@@ -182,4 +182,32 @@ def handle_fetch_room_list(room_manager: RoomManager, session_user_map: SessionU
     except Exception as e:
         logger.error(f"Fetch room list error: user={username}, error={str(e)}")
         return FetchRoomListResponsePayload(rooms=[]), False, str(e)
+    
+def handle_fetch_player_list(session_user_map: SessionUserMap, session: Session) -> tuple[FetchPlayerListResponsePayload, bool, str]:
+    addr = session.peer_address
+    user_info = session_user_map.get_user_by_session(session)
+    try:
+        if not user_info:
+            logger.warning(f"Fetch player list failed: Unauthenticated session from addr={addr}")
+            raise Exception("Unauthenticated session")
+        
+        role, username = user_info
 
+        if role != Role.PLAYER:
+            logger.warning(f"Fetch player list failed: Unauthorized role - {role} for user={username}, addr={addr}")
+            raise Exception("Only players can fetch player list")
+        
+        logger.info(f"Fetch player list attempt: user={username}, addr={addr}")
+
+        players = session_user_map.get_all_player_usernames()
+        # exclude self
+        try:
+            players.remove(username)
+        except ValueError:
+            pass
+        logger.info(f"Fetch player list success: user={username}, player_count={len(players)}")
+
+        return FetchPlayerListResponsePayload(players=players), True, ""
+    except Exception as e:
+        logger.error(f"Fetch player list error: user={username}, error={str(e)}")
+        return FetchPlayerListResponsePayload(players=[]), False, str(e)

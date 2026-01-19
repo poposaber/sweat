@@ -70,6 +70,8 @@ class Dispatcher:
 				payload, ok, error = room_handlers.handle_check_my_room(self._room_manager, self._session_user_map, session)
 			case Action.FETCH_ROOM_LIST:
 				payload, ok, error = room_handlers.handle_fetch_room_list(self._room_manager, self._session_user_map, session)
+			case Action.FETCH_PLAYER_LIST:
+				payload, ok, error = room_handlers.handle_fetch_player_list(self._session_user_map, session)
 			case Action.START_GAME:
 				payload, ok, error = game_launch_handlers.handle_start_game(self._room_manager, self._game_process_manager, self._db, self._session_user_map, session)
 			case Action.GAME_CHECK_RESULT:

@@ -395,6 +395,26 @@ class ClientController:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
+    def fetch_player_list(self, 
+                          on_result: Optional[Callable[[list[str]], None]] = None,
+                          on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.fetch_player_list()
+                if not success:
+                    raise Exception(result or "Fetch Player List failed")
+                
+                assert isinstance(result, list)
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(result))
+                    else:
+                        cb_ok(result)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
     def start_game(self, 
                    on_result: Optional[Callable[[], None]] = None,
                    on_error: Optional[Callable[[Exception], None]] = None):

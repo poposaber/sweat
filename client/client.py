@@ -240,6 +240,16 @@ class Client:
         else:
             return False, resp.error
         
+    def fetch_player_list(self) -> tuple[bool, list[str] | str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = room.fetch_player_list(self._session)
+        if resp.ok:
+            assert isinstance(resp.payload, room_payloads.FetchPlayerListResponsePayload)
+            return True, resp.payload.players
+        else:
+            return False, resp.error
+        
     def start_game(self) -> tuple[bool, str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")

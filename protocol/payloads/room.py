@@ -23,6 +23,10 @@ class FetchRoomListResponsePayload:
     rooms: list[tuple[str, str, str, int, int, str]]  # (room_id, host, game_name, player_count, max_players, status)
 
 @dataclass
+class FetchPlayerListResponsePayload:
+    players: list[str]
+
+@dataclass
 class JoinRoomPayload:
     room_id: str
 

@@ -24,6 +24,7 @@ class Action(Enum):
     LEAVE_ROOM = 'room.leave'
     CHECK_MY_ROOM = 'room.check_my_room'
     FETCH_ROOM_LIST = 'room.fetch_list'
+    FETCH_PLAYER_LIST = 'room.fetch_player_list'
     START_GAME = 'room.start_game'
     GAME_CHECK_RESULT = 'game.check_result'
     # used in events

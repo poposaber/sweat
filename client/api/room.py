@@ -25,6 +25,11 @@ def fetch_room_list(session: Session) -> Message:
     resp = session.request_response(req)
     return resp
 
+def fetch_player_list(session: Session) -> Message:
+    req = Message.request(Action.FETCH_PLAYER_LIST, EmptyPayload())
+    resp = session.request_response(req)
+    return resp
+
 def join_room(session: Session, room_id: str) -> Message:
     payload = JoinRoomPayload(room_id=room_id)
     req = Message.request(Action.JOIN_ROOM, payload)

@@ -42,6 +42,7 @@ _PAYLOAD_MAP = {
     Action.LEAVE_ROOM: EmptyPayload,
     Action.CHECK_MY_ROOM: EmptyPayload,
     Action.FETCH_ROOM_LIST: EmptyPayload,
+    Action.FETCH_PLAYER_LIST: EmptyPayload,
     Action.ROOM_CREATED: RoomCreatedEventPayload, 
     Action.ROOM_REMOVED: RoomRemovedEventPayload,
     Action.ROOM_UPDATED: RoomUpdatedEventPayload,
@@ -66,7 +67,7 @@ _RESPONSE_PAYLOAD_MAP = {
     Action.JOIN_ROOM: EmptyPayload,
     Action.CHECK_MY_ROOM: CheckMyRoomResponsePayload,
     Action.FETCH_ROOM_LIST: FetchRoomListResponsePayload,
-    
+    Action.FETCH_PLAYER_LIST: FetchPlayerListResponsePayload,
     Action.GAME_CHECK_RESULT: EmptyPayload,
 }
 

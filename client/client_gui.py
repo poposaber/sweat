@@ -39,6 +39,7 @@ class ClientGUI:
                                     leave_room_callback=self._client_controller.leave_room,
                                     check_my_room_callback=self._client_controller.check_my_room, 
                                     fetch_room_list_callback=self._client_controller.fetch_room_list, 
+                                    fetch_player_list_callback=self._client_controller.fetch_player_list,
                                     start_game_callback=self._client_controller.start_game, 
                                     get_user_info_callback=self._client_controller.get_user_info)
         # Initially hide lobby page
