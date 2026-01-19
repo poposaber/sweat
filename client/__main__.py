@@ -7,7 +7,7 @@ from .client_gui import ClientGUI
 
 def main():
 	parser = argparse.ArgumentParser(description="Start the Client GUI")
-	parser.add_argument("--host", default="127.0.0.1", help="Server host (default: 127.0.0.1)")
+	parser.add_argument("--host", default="linux1.cs.nycu.edu.tw", help="Server host (default: linux1.cs.nycu.edu.tw)")
 	parser.add_argument("--port", type=int, default=14253, help="Server port (default: 14253)")
 	parser.add_argument(
 		"--log-level",

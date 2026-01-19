@@ -5,7 +5,7 @@ from .server_cli import ServerCLI
 
 def main():
 	parser = argparse.ArgumentParser(description="Start the TCP server")
-	parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
+	parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
 	parser.add_argument("--port", type=int, default=14253, help="Bind port (default: 14253)")
 	parser.add_argument(
 		"--log-level",
