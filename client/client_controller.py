@@ -433,6 +433,26 @@ class ClientController:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
+    def get_user_info(self, 
+                      on_result: Optional[Callable[[str], None]] = None,
+                      on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, result = self._client.get_user_info()
+                if not success:
+                    raise Exception(result or "Get User Info failed")
+                
+                assert isinstance(result, str)
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, lambda: cb_ok(result))
+                    else:
+                        cb_ok(result)
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
     def logout(self, on_result: Optional[Callable[[], None]] = None,
                on_error: Optional[Callable[[Exception], None]] = None):
         def _work():

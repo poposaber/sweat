@@ -20,7 +20,8 @@ class LobbyView(ctk.CTkFrame):
                  leave_room_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None,
                  check_my_room_callback: Optional[Callable[[Callable[[bool, str, str, str, list[str], int, str, str], None], Callable[[Exception], None]], None]] = None,
                  fetch_room_list_callback: Optional[Callable[[Callable[[list[tuple[str, str, str, int, int, str]]], None], Callable[[Exception], None]], None]] = None, 
-                 start_game_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None,
+                 start_game_callback: Optional[Callable[[Callable[[], None], Callable[[Exception], None]], None]] = None, 
+                 get_user_info_callback: Optional[Callable[[Callable[[str], None], Callable[[Exception], None]], None]] = None,
                  library_manager: Optional[LibraryManager] = None):
         super().__init__(master)
         self._create_room_callback = create_room_callback
@@ -31,7 +32,7 @@ class LobbyView(ctk.CTkFrame):
                                        download_callback=download_callback, on_create_room_click=self._on_create_room_click)
         self.this_lobby_page = ThisLobbyPage(self, fetch_room_list_callback=fetch_room_list_callback, on_join_room_click=self._on_join_room_click)
         self.my_room_page = MyRoomPage(self, check_my_room_callback=check_my_room_callback, leave_room_callback=leave_room_callback, start_game_callback=start_game_callback)
-        self.account_page = AccountPage(self, logout_callback=logout_callback)
+        self.account_page = AccountPage(self, logout_callback=logout_callback, get_user_info_callback=get_user_info_callback)
         self.tab_bar = TabBar(self, command=self._on_tabbar_click)
         self.tab_bar.add_tab("store", "Store", self.store_page, default=True)
         self.tab_bar.add_tab("my_games", "My Games", self.my_game_page)
@@ -55,6 +56,8 @@ class LobbyView(ctk.CTkFrame):
             self.my_room_page.update_room_status()
         elif tab_id == "this_lobby":
             self.this_lobby_page.reset()
+        elif tab_id == "account":
+            self.account_page.update_user_info()
 
     def _on_create_room_click(self, game_name: str):
         if self._create_room_callback:

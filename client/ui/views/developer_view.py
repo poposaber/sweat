@@ -10,7 +10,8 @@ class DeveloperView(ctk.CTkFrame):
                  logout_callback: Optional[Callable[[], None]] = None, 
                  upload_callback: Optional[Callable[[str, str, int, int, str], None]] = None, 
                  my_works_callback: Optional[Callable[[], None]] = None, 
-                 create_template_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
+                 create_template_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None, 
+                 get_user_info_callback: Optional[Callable[[Callable[[str], None], Optional[Callable[[Exception], None]]], None]] = None):
         super().__init__(master)
 
         # ctk.CTkLabel(self, text="Developer View").place(relx=0.5, rely=0.3, anchor=ctk.CENTER)
@@ -21,7 +22,7 @@ class DeveloperView(ctk.CTkFrame):
         self._my_works_callback = my_works_callback
         self.my_works_page = MyWorksPage(self, create_template_callback=create_template_callback)
         self.upload_page = UploadPage(self, on_upload_callback=upload_callback)
-        self.account_page = AccountPage(self, logout_callback=logout_callback)
+        self.account_page = AccountPage(self, logout_callback=logout_callback, get_user_info_callback=get_user_info_callback)
         self.tab_bar = TabBar(self, command=self._on_tabbar_click)
         self.tab_bar.add_tab("my_works", "My Works", self.my_works_page, default=True)
         self.tab_bar.add_tab("upload", "Upload", self.upload_page)
@@ -35,6 +36,8 @@ class DeveloperView(ctk.CTkFrame):
         if id == "my_works":
             if self._my_works_callback:
                 self._my_works_callback()
+        elif id == "account":
+            self.account_page.update_user_info()
 
     def reset(self):
         self.tab_bar.show("my_works")

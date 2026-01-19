@@ -268,3 +268,8 @@ class Client:
         resp = game_launch.send_game_check_result(self._session, game_name, version, sha256)
         assert resp.ok is not None
         return resp.ok, resp.error
+    
+    def get_user_info(self) -> tuple[bool, str | None]:
+        if self._username is None:
+            return False, "Username not set"
+        return True, self._username

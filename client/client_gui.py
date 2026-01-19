@@ -39,7 +39,8 @@ class ClientGUI:
                                     leave_room_callback=self._client_controller.leave_room,
                                     check_my_room_callback=self._client_controller.check_my_room, 
                                     fetch_room_list_callback=self._client_controller.fetch_room_list, 
-                                    start_game_callback=self._client_controller.start_game)
+                                    start_game_callback=self._client_controller.start_game, 
+                                    get_user_info_callback=self._client_controller.get_user_info)
         # Initially hide lobby page
         self.lobby_view.place_forget()
 
@@ -47,7 +48,8 @@ class ClientGUI:
                                             logout_callback=self.logout, 
                                             upload_callback=self._on_upload_submit,
                                             my_works_callback=self._on_my_works_click, 
-                                            create_template_callback=self._client_controller.create_game_template)
+                                            create_template_callback=self._client_controller.create_game_template, 
+                                            get_user_info_callback=self._client_controller.get_user_info)
 
         self._state_dict = {
             ClientState.DISCONNECTED: self.disconnected_view, 
