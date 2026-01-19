@@ -1,14 +1,17 @@
 import logging
 from protocol.payloads.auth import Credential
 from protocol.payloads.common import EmptyPayload
+from protocol.payloads.events import UsernameEventPayload
 from server.infra.database import Database
 from server.infra.session_user_map import SessionUserMap
 from server.infra.room_manager import RoomManager
 from server.infra import broadcaster
+
 from session.session import Session
+from protocol.enums import Action
 from protocol.enums import Role
 from protocol.message import Message
-from server.api.room_event_publisher import broadcast_leave_room_event
+from server.api.event_publisher import broadcast_leave_room_event, broadcast_player_logged_in_event, broadcast_player_logged_out_event
 from server.infra.game_process_manager import GameProcessManager
 
 logger = logging.getLogger(__name__)
@@ -47,6 +50,8 @@ def handle_login(payload: Credential, db: Database, session_user_map: SessionUse
 	session_user_map.move_session_to_user(session, role, payload.username)
 
 	logger.info(f"Login success: {payload.username} as {payload.role}")
+	# broadcast player logged in event
+	broadcast_player_logged_in_event(session_user_map, payload.username)
 	return payload, True, None
 
 
@@ -79,8 +84,10 @@ def handle_logout(room_manager: RoomManager, game_process_manager: GameProcessMa
 			if room_id:
 				room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.clean_cache)
 				logger.info(f"User {username} removed from room {room_id} on logout")
-				# broadcast
+				# broadcast room events
 				broadcast_leave_room_event(room_manager, session_user_map, username, room_id)
+			# broadcast player logged out event
+			broadcast_player_logged_out_event(session_user_map, username)
 
 
 		session_user_map.move_session_back(session)

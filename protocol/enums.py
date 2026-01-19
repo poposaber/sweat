@@ -33,6 +33,8 @@ class Action(Enum):
     ROOM_UPDATED = 'room.updated'
     MY_ROOM_UPDATED = 'room.my_room_updated'
     ROOM_PLAYER_JOINED = 'room.player_joined'
+    PLAYER_LOGGED_IN = 'player.logged_in'
+    PLAYER_LOGGED_OUT = 'player.logged_out'
     ROOM_PLAYER_LEFT = 'room.player_left'
     GAME_CHECK = 'game.check'
     GAME_START_RESULT = 'game.start_result'

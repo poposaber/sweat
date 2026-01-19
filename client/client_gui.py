@@ -136,6 +136,12 @@ class ClientGUI:
                         return
                     my_room_updated_payload: MyRoomUpdatedEventPayload = event.payload
                     self.lobby_view.my_room_page.set_room(my_room_updated_payload.player_list, my_room_updated_payload.host_username, username, my_room_updated_payload.status)
+                case Action.PLAYER_LOGGED_IN:
+                    logged_in_payload: UsernameEventPayload = event.payload
+                    self.lobby_view.this_lobby_page.add_player(logged_in_payload.username)
+                case Action.PLAYER_LOGGED_OUT:
+                    logged_out_payload: UsernameEventPayload = event.payload
+                    self.lobby_view.this_lobby_page.remove_player(logged_out_payload.username)
     def _auto_connect(self):
 
         def on_error(e):

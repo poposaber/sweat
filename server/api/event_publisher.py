@@ -1,5 +1,5 @@
 import logging
-from protocol.payloads.events import RoomRemovedEventPayload, RoomUpdatedEventPayload, MyRoomUpdatedEventPayload
+from protocol.payloads.events import RoomRemovedEventPayload, RoomUpdatedEventPayload, MyRoomUpdatedEventPayload, UsernameEventPayload
 from protocol.enums import Action
 from protocol.message import Message
 from server.infra.room_manager import RoomManager
@@ -92,3 +92,25 @@ def broadcast_join_room_event(room_manager: RoomManager, session_user_map: Sessi
     exclude_list = room.player_list.copy()  # includes the new joiner
     broadcaster.broadcast_to_players(session_user_map, msg_room_updated_event, exclude_usernames=exclude_list)
     logger.info(f"Room {room_id} updated event broadcasted (user {username} joined)")
+
+def broadcast_player_logged_out_event(session_user_map: SessionUserMap, username: str):
+    """
+    Broadcasts a player logged out event to all players except the one who logged out.
+    """
+    event_payload = UsernameEventPayload(
+        username=username
+    )
+    msg_event = Message.event(Action.PLAYER_LOGGED_OUT, event_payload)
+    broadcaster.broadcast_to_players(session_user_map, msg_event, exclude_usernames=[username])
+    logger.info(f"Player logged out event broadcasted for user {username}")
+
+def broadcast_player_logged_in_event(session_user_map: SessionUserMap, username: str):
+    """
+    Broadcasts a player logged in event to all players except the one who logged in.
+    """
+    event_payload = UsernameEventPayload(
+        username=username
+    )
+    msg_event = Message.event(Action.PLAYER_LOGGED_IN, event_payload)
+    broadcaster.broadcast_to_players(session_user_map, msg_event, exclude_usernames=[username])
+    logger.info(f"Player logged in event broadcasted for user {username}")

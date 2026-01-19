@@ -47,7 +47,8 @@ _PAYLOAD_MAP = {
     Action.ROOM_REMOVED: RoomRemovedEventPayload,
     Action.ROOM_UPDATED: RoomUpdatedEventPayload,
     Action.MY_ROOM_UPDATED: MyRoomUpdatedEventPayload,
-    
+    Action.PLAYER_LOGGED_IN: UsernameEventPayload,
+    Action.PLAYER_LOGGED_OUT: UsernameEventPayload,
     Action.START_GAME: EmptyPayload,
     Action.GAME_CHECK: GameCheckEventPayload,
     Action.GAME_CHECK_RESULT: GameCheckResultPayload,

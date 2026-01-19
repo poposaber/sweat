@@ -39,3 +39,9 @@ class ThisLobbyPage(customtkinter.CTkFrame):
 
     def update_room(self, room_id: str, host: str, game_name: str, players: int, max_players: int, status: str):
         self.rooms_slide.update_room(room_id, host, game_name, players, max_players, status)
+
+    def add_player(self, player_name: str):
+        self.players_slide.add_player(player_name)
+
+    def remove_player(self, player_name: str):
+        self.players_slide.remove_player(player_name)

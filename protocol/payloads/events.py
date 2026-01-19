@@ -23,6 +23,10 @@ class RoomUpdatedEventPayload:
     status: str
 
 @dataclass
+class UsernameEventPayload:
+    username: str
+
+@dataclass
 class MyRoomUpdatedEventPayload:
     host_username: str
     game_name: str

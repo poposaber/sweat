@@ -11,7 +11,7 @@ from protocol.payloads.events import RoomCreatedEventPayload
 from protocol.enums import Role, Action, RoomStatus
 from protocol.message import Message
 import server.infra.broadcaster as broadcaster
-from server.api import room_event_publisher as rep
+from server.api import event_publisher as ep
 from server.infra.game_process_manager import GameProcessManager
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def handle_join_room(payload: JoinRoomPayload, room_manager: RoomManager, sessio
 
         room_manager.add_player_to_room(payload.room_id, username)
 
-        rep.broadcast_join_room_event(room_manager, session_user_map, username, payload.room_id)
+        ep.broadcast_join_room_event(room_manager, session_user_map, username, payload.room_id)
 
         logger.info(f"Join room success: user={username}, joined room_id={payload.room_id}")
 
@@ -111,7 +111,7 @@ def handle_leave_room(room_manager: RoomManager, game_process_manager: GameProce
 
         room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.clean_cache)
         
-        rep.broadcast_leave_room_event(room_manager, session_user_map, username, room_id)
+        ep.broadcast_leave_room_event(room_manager, session_user_map, username, room_id)
             
         logger.info(f"Leave room success: user={username}, left room_id={room_id}")
 

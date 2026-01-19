@@ -10,7 +10,7 @@ from server.infra.session_user_map import SessionUserMap
 from server.infra.room_manager import RoomManager
 from server.infra.game_process_manager import GameProcessManager
 from protocol.enums import Role
-from server.api.room_event_publisher import broadcast_leave_room_event
+from server.api.event_publisher import broadcast_leave_room_event, broadcast_player_logged_out_event
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,7 @@ class Server:
                     self._room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=self._game_process_manager.clean_cache)
                     broadcast_leave_room_event(self._room_manager, self._session_user_map, username, room_id)
                     logger.info(f"User {username} removed from room {room_id} on session cleanup")
+                broadcast_player_logged_out_event(self._session_user_map, username)
         self._session_user_map.remove_session(session)
         try:
             session.close()
