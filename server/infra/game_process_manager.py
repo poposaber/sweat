@@ -84,12 +84,19 @@ class GameProcessManager:
                 return False, 0, "No executable found in game server package (__main__.py)"
 
             logger.info(f"Starting game server for room {room_id}: {cmd}")
+
+            # Prepare environment: Add project root to PYTHONPATH so shared modules (like protocol) are found
+            # server/infra/game_process_manager.py -> server/infra -> server -> root (2 levels up)
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+            env = os.environ.copy()
+            env["PYTHONPATH"] = project_root + os.pathsep + env.get("PYTHONPATH", "")
             
             # 5. Start process
             # Use PIPE to capture stdout and check for READY
             proc = subprocess.Popen(
                 cmd, 
                 cwd=room_run_dir,
+                env=env,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
