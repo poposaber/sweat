@@ -23,7 +23,7 @@ class ThisLobbyPage(customtkinter.CTkFrame):
         self.after(100, self.rooms_slide.refresh_rooms)
 
     def on_tabbar_select(self, tab_id: str):
-        print(f"Selected tab: {tab_id}")
+        # print(f"Selected tab: {tab_id}")
         if tab_id == "rooms":
             # Delay refresh slightly to avoid race condition where widgets 
             # are destroyed while trying to redraw due to tab switch

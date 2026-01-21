@@ -16,7 +16,7 @@ class ClientGUI:
         super().__init__()
         self._client_controller = client_controller
         self._root = root
-        self._root.title("Client GUI")
+        self._root.title("Sweat")
         self._root.geometry("350x450")
 
         # disconnected page embedded

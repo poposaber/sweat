@@ -32,7 +32,7 @@ class DeveloperView(ctk.CTkFrame):
         self.geom_size = "800x600"
 
     def _on_tabbar_click(self, id: str):
-        print(f"DeveloperView: Tab '{id}' clicked.")
+        # print(f"DeveloperView: Tab '{id}' clicked.")
         if id == "my_works":
             if self._my_works_callback:
                 self._my_works_callback()

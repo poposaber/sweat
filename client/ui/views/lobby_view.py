@@ -49,7 +49,7 @@ class LobbyView(ctk.CTkFrame):
         self.my_game_page.set_library_manager(library_manager)
 
     def _on_tabbar_click(self, tab_id: str):
-        print(f"Tab clicked: {tab_id}")
+        # print(f"Tab clicked: {tab_id}")
         if tab_id == "store":
             self.store_page.reset()
         elif tab_id == "my_games":
