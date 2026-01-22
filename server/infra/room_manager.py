@@ -101,6 +101,9 @@ class RoomManager:
             if username in self._player_room_map:
                 logger.warning(f"Add player to room failed: user {username} is already in another room")
                 raise PlayerAlreadyInRoomError(f"User {username} is already in another room {self._player_room_map[username]}")
+            if room.status != RoomStatus.WAITING:
+                logger.warning(f"Add player to room failed: room_id={room_id} is not in WAITING status")
+                raise RoomClosedError(f"Room {room_id} is not open for joining")
             room.player_list.append(username)
             self._player_room_map[username] = room_id
             logger.info(f"User {username} added to room {room_id}")

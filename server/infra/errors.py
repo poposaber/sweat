@@ -21,3 +21,7 @@ class RoomFullError(RoomManagerError):
 class RoomNotFoundError(RoomManagerError):
     """Raised when a room is not found."""
     pass
+
+class RoomClosedError(RoomManagerError):
+    """Raised when trying to join a closed (starting game or in game) room."""
+    pass
