@@ -16,6 +16,7 @@ class GameProcessManager:
         self._input_base_run_dir = base_run_dir
         self._run_dir = os.path.abspath(base_run_dir)
         self._running_processes: Dict[str, subprocess.Popen] = {} # room_id -> Popen
+        self._running_monitors: Dict[str, threading.Thread] = {} # room_id -> monitor thread
         self._port_map: Dict[str, int] = {} # room_id -> port
         self._starting_rooms: set[str] = set() # room_id
         self._lock = threading.Lock()
@@ -152,6 +153,7 @@ class GameProcessManager:
             with self._lock:
                 self._running_processes[room_id] = proc
                 self._port_map[room_id] = port
+                self._running_monitors[room_id] = t
             
             return True, port, ""
 
@@ -174,9 +176,12 @@ class GameProcessManager:
                     except subprocess.TimeoutExpired:
                         proc.kill()
             
-            del self._running_processes[room_id]
+                del self._running_processes[room_id]
+                
             if room_id in self._port_map:
                 del self._port_map[room_id]
+            if room_id in self._running_monitors:
+                del self._running_monitors[room_id]
             
             # Cleanup files? Maybe keep logs for debugging.
             # room_run_dir = os.path.join(self._run_dir, room_id)
@@ -200,4 +205,31 @@ class GameProcessManager:
     def clean_cache(self, room_id: str):
         room_run_dir = os.path.join(self._run_dir, room_id)
         if os.path.exists(room_run_dir):
-            shutil.rmtree(room_run_dir)
+            try:
+                shutil.rmtree(room_run_dir)
+            except Exception as e:
+                logger.error(f"Failed to clean cache for room {room_id}: {e}")
+
+    def try_stop_game_server_and_clean_cache(self, room_id: str):
+        """
+        Force stops the game server if running, waits for log file to close,
+        and then removes the directory.
+        """
+        logger.info(f"Force stopping and cleaning cache for room {room_id}")
+
+        monitor_thread = None
+        
+        # 1. 在停止之前先取得 thread 參照 (因為 stop_game_server 會把它從 dict 移除)
+        with self._lock:
+            monitor_thread = self._running_monitors.get(room_id)
+
+        # 2. 停止進程 (這會觸發 pipe 關閉 -> monitor thread 迴圈結束)
+        self.stop_game_server(room_id)
+
+        # 3. 等待 Monitor Thread 結束 (確保 server.log 檔案已被釋放)
+        if monitor_thread and monitor_thread.is_alive():
+            # 設定一個短暫的 timeout 避免死鎖，雖然正常情況下 pipe 關閉很快
+            monitor_thread.join(timeout=2.0)
+
+        # 4. 安全地刪除快取
+        self.clean_cache(room_id)

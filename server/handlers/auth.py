@@ -82,7 +82,7 @@ def handle_logout(room_manager: RoomManager, game_process_manager: GameProcessMa
 		if role == Role.PLAYER:
 			room_id = room_manager.get_room_id_by_player(username)
 			if room_id:
-				room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.clean_cache)
+				room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.try_stop_game_server_and_clean_cache)
 				logger.info(f"User {username} removed from room {room_id} on logout")
 				# broadcast room events
 				broadcast_leave_room_event(room_manager, session_user_map, username, room_id)

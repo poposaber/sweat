@@ -109,7 +109,7 @@ def handle_leave_room(room_manager: RoomManager, game_process_manager: GameProce
             raise Exception("You are not in any room")
         
 
-        room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.clean_cache)
+        room_manager.remove_player_from_room(room_id, username, on_delete_room_callback=game_process_manager.try_stop_game_server_and_clean_cache)
         
         ep.broadcast_leave_room_event(room_manager, session_user_map, username, room_id)
             
