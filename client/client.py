@@ -81,7 +81,7 @@ class Client:
         self._username = username
 
     def set_library_manager_and_game_launcher_by_username(self, username: str) -> None:
-        dest_folder_path = os.path.join("client", "games", username)
+        dest_folder_path = os.path.join("library", username)
         self._library_manager = LibraryManager(dest_folder_path)
         self._game_launcher = GameLauncher(dest_folder_path)
 

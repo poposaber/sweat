@@ -29,7 +29,7 @@ class ThisLobbyPage(customtkinter.CTkFrame):
             # are destroyed while trying to redraw due to tab switch
             self.after(100, self.rooms_slide.refresh_rooms)
         elif tab_id == "players":
-            self.players_slide.refresh_players()
+            self.after(100, self.players_slide.refresh_players)
     
     def add_room(self, room_id: str, host: str, game_name: str, players: int, max_players: int, status: str):
         self.rooms_slide.add_room(room_id, host, game_name, players, max_players, status)

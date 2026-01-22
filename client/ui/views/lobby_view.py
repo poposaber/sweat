@@ -51,15 +51,15 @@ class LobbyView(ctk.CTkFrame):
     def _on_tabbar_click(self, tab_id: str):
         # print(f"Tab clicked: {tab_id}")
         if tab_id == "store":
-            self.store_page.reset()
+            self.after(50, self.store_page.reset)
         elif tab_id == "my_games":
-            self.after(100, self.my_game_page.refresh_games)
+            self.after(50, self.my_game_page.refresh_games)
         elif tab_id == "my_room":
-            self.my_room_page.update_room_status()
+            self.after(50, self.my_room_page.update_room_status)
         elif tab_id == "this_lobby":
-            self.this_lobby_page.reset()
+            self.after(50, self.this_lobby_page.reset)
         elif tab_id == "account":
-            self.account_page.update_user_info()
+            self.after(50, self.account_page.update_user_info)
 
     def _on_create_room_click(self, game_name: str):
         if self._create_room_callback:

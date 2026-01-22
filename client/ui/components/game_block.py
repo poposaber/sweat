@@ -30,7 +30,7 @@ class GameBlock(customtkinter.CTkFrame):
         self.game_cover_image_label = customtkinter.CTkLabel(self, image=self.game_cover_image, text="", fg_color="transparent")
         self.game_cover_image_label.grid(row=0, column=0, sticky=customtkinter.W, padx=10, pady=10)
 
-        self.game_label = customtkinter.CTkLabel(self, text=f"{game_name} (v{version})", font=("Arial", 16), fg_color="transparent", wraplength=128)
+        self.game_label = customtkinter.CTkLabel(self, text=f"{game_name}", font=("Arial", 16), fg_color="transparent", wraplength=128)
         self.game_label.grid(row=1, column=0, sticky=customtkinter.W, padx=10, pady=(10, 0))
 
         self.players_label = customtkinter.CTkLabel(self, text=f"Players: {min_players}-{max_players}", font=("Arial", 12), fg_color="transparent", wraplength=128)
