@@ -38,9 +38,10 @@ Thumbs.db
 # sweat.db
 sweat.db
 
-# game files
-server/games
+# game files, running games cache
+library/
 client/games
 
-# running games cache
+server/games
 server/running_games
+storage/
