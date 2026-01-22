@@ -20,7 +20,7 @@ class UploadState:
     last_activity: float
 
 class UploadManager:
-    def __init__(self, temp_dir: str = "server/temp_uploads"):
+    def __init__(self, temp_dir: str = "storage/temp"):
         self._temp_dir = temp_dir
         self._uploads: dict[str, UploadState] = {}
         self._lock = threading.Lock()

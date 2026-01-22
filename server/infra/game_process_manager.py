@@ -12,7 +12,7 @@ from typing import Dict, Optional, Tuple, Callable
 logger = logging.getLogger(__name__)
 
 class GameProcessManager:
-    def __init__(self, base_run_dir: str = "server/running_games"):
+    def __init__(self, base_run_dir: str = "storage/runtime"):
         self._input_base_run_dir = base_run_dir
         self._run_dir = os.path.abspath(base_run_dir)
         self._running_processes: Dict[str, subprocess.Popen] = {} # room_id -> Popen
@@ -177,7 +177,7 @@ class GameProcessManager:
                         proc.kill()
             
                 del self._running_processes[room_id]
-                
+
             if room_id in self._port_map:
                 del self._port_map[room_id]
             if room_id in self._running_monitors:
