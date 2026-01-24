@@ -106,3 +106,34 @@ class LibraryManager:
 
     def get_all_games(self) -> Dict[str, InstalledGame]:
         return self._load_manifest()
+    
+    def sync_manifest_and_files(self):
+        # Remove entries from manifest if their folders do not exist
+        manifest = self._load_manifest()
+        to_remove = []
+        for game_name, info in manifest.items():
+            path = os.path.join(self.library_root, info["install_folder_name"])
+            if not os.path.exists(path):
+                to_remove.append(game_name)
+        for game_name in to_remove:
+            del manifest[game_name]
+        if to_remove:
+            self._save_manifest(manifest)
+
+        # Remove folders and files that are not in manifest
+        existing_folders = set(os.listdir(self.library_root))
+        manifest_folders = set(info["install_folder_name"] for info in manifest.values())
+        for folder in existing_folders - manifest_folders - {self.MANIFEST_FILENAME}:
+            folder_path = os.path.join(self.library_root, folder)
+            if os.path.isdir(folder_path):
+                try:
+                    shutil.rmtree(folder_path)
+                except OSError:
+                    pass
+            elif os.path.isfile(folder_path):
+                try:
+                    os.remove(folder_path)
+                except OSError:
+                    pass
+
+        

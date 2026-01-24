@@ -33,7 +33,7 @@ class ClientGUI:
                                     fetch_store_callback=self._client_controller.fetch_store,
                                     fetch_cover_callback=self._client_controller.fetch_game_cover, 
                                     fetch_game_detail_callback=self._client_controller.fetch_game_detail, 
-                                    download_callback=self._client_controller.download_game, 
+                                    download_callback=self._client_controller.download_game_and_sync_library, 
                                     create_room_callback=self._client_controller.create_room, 
                                     join_room_callback=self._client_controller.join_room,
                                     leave_room_callback=self._client_controller.leave_room,

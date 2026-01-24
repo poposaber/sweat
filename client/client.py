@@ -175,7 +175,7 @@ class Client:
         else:
             return False, resp.error
         
-    def download_game(self, game_name: str, progress_callback=None) -> tuple[bool, str | None]:
+    def download_game_and_sync_library(self, game_name: str, progress_callback=None) -> tuple[bool, str | None]:
         if self._session is None:
             raise RuntimeError("Client is not connected")
         if self._username is None:
@@ -189,6 +189,7 @@ class Client:
         
         # library_manager = LibraryManager(dest_folder_path)
         resp = game.download_game(self._session, game_name, dest_folder_path, self._library_manager, progress_callback)
+        self._library_manager.sync_manifest_and_files()
         assert resp.ok is not None
         return resp.ok, resp.error
     

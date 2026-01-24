@@ -263,7 +263,7 @@ class ClientController:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
-    def download_game(self, game_name: str, 
+    def download_game_and_sync_library(self, game_name: str, 
                       on_result: Optional[Callable[[], None]] = None,
                       on_error: Optional[Callable[[Exception], None]] = None,
                       on_progress: Optional[Callable[[int, int], None]] = None):
@@ -280,7 +280,7 @@ class ClientController:
                 else:
                     safe_progress = on_progress
 
-                success, error = self._client.download_game(game_name, safe_progress)
+                success, error = self._client.download_game_and_sync_library(game_name, safe_progress)
                 if not success:
                     raise Exception(error or "Download failed")
                 
