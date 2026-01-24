@@ -491,6 +491,24 @@ class ClientController:
                 self._on_exception(e, on_error)
         threading.Thread(target=_work, daemon=True).start()
 
+    def delete_game(self, game_name: str,
+                    on_result: Optional[Callable[[], None]] = None,
+                    on_error: Optional[Callable[[Exception], None]] = None):
+        def _work():
+            try:
+                success, error = self._client.delete_game(game_name)
+                if not success:
+                    raise Exception(error or "Delete Game failed")
+                cb_ok = on_result
+                if cb_ok:
+                    if self._gui:
+                        self._gui.after(0, cb_ok)
+                    else:
+                        cb_ok()
+            except Exception as e:
+                self._on_exception(e, on_error)
+        threading.Thread(target=_work, daemon=True).start()
+
     def close(self):
         try:
             self._client.close()

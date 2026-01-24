@@ -283,3 +283,9 @@ class Client:
         if self._username is None:
             return False, "Username not set"
         return True, self._username
+    
+    def delete_game(self, game_name: str) -> tuple[bool, str | None]:
+        if self._library_manager is None:
+            raise RuntimeError("Library manager is not initialized")
+        self._library_manager.uninstall_game(game_name)
+        return True, None

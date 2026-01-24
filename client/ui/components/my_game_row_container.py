@@ -8,11 +8,13 @@ class MyGameRowContainer(RowContainer):
         super().__init__(master, width=width, height=height)
         self._row_dict: dict[str, MyGameRow] = {}
 
-    def add_game_row(self, game_name: str, version: str, min_players: int, max_players: int, button_callback: Optional[Callable[[], None]] = None):
-        row = super().add_row(MyGameRow, game_name, version, min_players, max_players, button_callback)
+    def add_game_row(self, game_name: str, version: str, min_players: int, max_players: int, 
+                     interact_button_callback: Optional[Callable[[], None]] = None, 
+                     delete_button_callback: Optional[Callable[[], None]] = None):
+        row = super().add_row(MyGameRow, game_name, version, min_players, max_players, interact_button_callback, delete_button_callback)
         self._row_dict[game_name] = row
 
-    def add_game_rows(self, games: list[tuple[str, str, int, int, Optional[Callable[[], None]]]]):
+    def add_game_rows(self, games: list[tuple[str, str, int, int, Optional[Callable[[], None]], Optional[Callable[[], None]]]]):
         for game in games:
             self.add_game_row(*game)
     
@@ -28,7 +30,7 @@ class MyGameRowContainer(RowContainer):
         if row:
             row.set_button(button_text, button_callback)
 
-    def set_game_rows(self, games: list[tuple[str, str, int, int, Optional[Callable[[], None]]]]):
+    def set_game_rows(self, games: list[tuple[str, str, int, int, Optional[Callable[[], None]], Optional[Callable[[], None]]]]):
         self.clear_game_rows()
         self.add_game_rows(games)
     

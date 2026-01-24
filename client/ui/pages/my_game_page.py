@@ -8,9 +8,10 @@ from tkinter import messagebox
 class MyGamePage(customtkinter.CTkFrame):
     def __init__(self, master, 
                  library_manager: Optional[LibraryManager] = None, 
-                 fetch_game_detail_callback: Optional[Callable[[str, Callable[[str, str, int, int, str], None], Callable[[Exception], None]], None]] = None,
+                 fetch_game_detail_callback: Optional[Callable[[str, Callable[[str, str, int, int, str], None], Callable[[Exception], None]], None]] = None, 
                  download_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None], Callable[[int, int], None]], None]] = None, 
-                 on_create_room_click: Optional[Callable[[str], None]] = None):
+                 on_create_room_click: Optional[Callable[[str], None]] = None, 
+                 delete_game_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None):
         super().__init__(master)
         self.game_row_container = MyGameRowContainer(self, width=600, height=400)
         self.game_row_container.place(relx=0.5, rely=0.5, relheight=1, relwidth=1, anchor=customtkinter.CENTER)
@@ -18,6 +19,7 @@ class MyGamePage(customtkinter.CTkFrame):
         self._download_callback = download_callback
         self._on_create_room_click = on_create_room_click
         self._fetch_game_detail_callback = fetch_game_detail_callback
+        self._delete_game_callback = delete_game_callback
 
     def set_library_manager(self, library_manager: Optional[LibraryManager]):
         self._library_manager = library_manager
@@ -29,6 +31,15 @@ class MyGamePage(customtkinter.CTkFrame):
     #             self._on_create_room_success,
     #             self._on_error
     #         )
+
+    def delete_game(self, game_name: str):
+        if self._delete_game_callback:
+            if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {game_name}?"):
+                self._delete_game_callback(
+                    game_name,
+                    self._on_delete_success,
+                    self._on_error
+                )
 
     def refresh_games(self):
         # 1. Get games from local manifest
@@ -47,7 +58,7 @@ class MyGamePage(customtkinter.CTkFrame):
             min_players = game_info["min_players"]
             max_players = game_info["max_players"]
             self.game_row_container.add_game_row(
-                game_name, version, min_players, max_players, lambda: None
+                game_name, version, min_players, max_players, lambda: None, lambda game_name=game_name: self.delete_game(game_name)
             )
         if self._fetch_game_detail_callback:
             for game_name, game_info in installed_games.items():
@@ -84,6 +95,10 @@ class MyGamePage(customtkinter.CTkFrame):
 
     def _on_download_complete(self):
         messagebox.showinfo("Download Complete", "Updated successfully.")
+        self.refresh_games()
+
+    def _on_delete_success(self):
+        messagebox.showinfo("Delete Complete", "Game deleted successfully.")
         self.refresh_games()
 
     # def _on_create_room_success(self, room_id: str):

@@ -95,7 +95,7 @@ class LibraryManager:
         manifest = self._load_manifest()
         if game_name in manifest:
             info = manifest[game_name]
-            path = info.get("install_path")
+            path = os.path.join(self.library_root, info["install_folder_name"])
             if path and os.path.exists(path):
                 try:
                     shutil.rmtree(path)
