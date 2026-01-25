@@ -30,6 +30,7 @@ _PAYLOAD_MAP = {
     Action.UPLOAD_GAME_INIT: UploadGameInitPayload,
     Action.UPLOAD_GAME_CHUNK: UploadGameChunkPayload,
     Action.UPLOAD_GAME_FINISH: UploadGameFinishPayload,
+    Action.REMOVE_GAME: RemoveGamePayload,
     Action.FETCH_MY_WORKS: EmptyPayload,
     Action.FETCH_STORE: FetchStorePayload,
     Action.FETCH_GAME_COVER: FetchGameCoverPayload,
@@ -58,6 +59,7 @@ _PAYLOAD_MAP = {
 _RESPONSE_PAYLOAD_MAP = {
     Action.UPLOAD_GAME_INIT: UploadGameInitResponsePayload,
     Action.UPLOAD_GAME_CHUNK: EmptyPayload,
+    Action.REMOVE_GAME: EmptyPayload,
     Action.FETCH_MY_WORKS: FetchMyWorksResponsePayload,
     Action.FETCH_STORE: FetchStoreResponsePayload,
     Action.FETCH_GAME_COVER: FetchGameCoverResponsePayload,

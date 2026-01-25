@@ -15,7 +15,8 @@ from protocol.payloads.game import (
     FetchGameDetailPayload, 
     DownloadGameInitPayload, DownloadGameInitResponsePayload, 
     DownloadGameChunkPayload, DownloadGameChunkResponsePayload, 
-    DownloadGameFinishPayload
+    DownloadGameFinishPayload, 
+    RemoveGamePayload
 )
 from protocol.payloads.common import EmptyPayload
 from client.infra.library_manager import LibraryManager
@@ -211,4 +212,9 @@ def download_game(
     except OSError:
         pass
     
+    return session.request_response(req)
+
+def remove_game(session: Session, game_name: str) -> Message:
+    payload = RemoveGamePayload(game_name=game_name)
+    req = Message.request(Action.REMOVE_GAME, payload)
     return session.request_response(req)

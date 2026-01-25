@@ -60,6 +60,8 @@ class Dispatcher:
 				payload, ok, error = game_handlers.handle_download_game_chunk(message.payload, self._download_manager, self._session_user_map, session)
 			case Action.DOWNLOAD_GAME_FINISH:
 				payload, ok, error = game_handlers.handle_download_game_finish(message.payload, self._download_manager, self._session_user_map, session)
+			case Action.REMOVE_GAME:
+				payload, ok, error = game_handlers.handle_remove_game(message.payload, self._db, self._session_user_map, session)
 			case Action.CREATE_ROOM:
 				payload, ok, error = room_handlers.handle_create_room(message.payload, self._db, self._room_manager, self._session_user_map, session)
 			case Action.JOIN_ROOM:

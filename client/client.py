@@ -290,3 +290,10 @@ class Client:
             raise RuntimeError("Library manager is not initialized")
         self._library_manager.uninstall_game(game_name)
         return True, None
+    
+    def remove_game_from_server(self, game_name: str) -> tuple[bool, str | None]:
+        if self._session is None:
+            raise RuntimeError("Client is not connected")
+        resp = game.remove_game(self._session, game_name)
+        assert resp.ok is not None
+        return resp.ok, resp.error

@@ -49,8 +49,9 @@ class ClientGUI:
         self.developer_view = DeveloperView(self._root, 
                                             logout_callback=self.logout, 
                                             upload_callback=self._on_upload_submit,
-                                            my_works_callback=self._on_my_works_click, 
+                                            fetch_my_works_callback=self._client_controller.fetch_my_works,
                                             create_template_callback=self._client_controller.create_game_template, 
+                                            remove_game_callback=self._client_controller.remove_game_from_server,
                                             get_user_info_callback=self._client_controller.get_user_info)
 
         self._state_dict = {
@@ -181,7 +182,7 @@ class ClientGUI:
                 self.lobby_view.store_page.reset()
             elif role == Role.DEVELOPER.value:
                 self._set_state(ClientState.IN_DEVELOPMENT)
-                self._on_my_works_click()
+                self.developer_view.my_works_page.refresh()
             else:
                 raise ValueError(f"Unknown role: {role}")
         def ng(e: Exception):
@@ -194,12 +195,12 @@ class ClientGUI:
     #     self.lobby_view.store_page.game_list_slide.reset()
         
 
-    def _on_my_works_click(self):
-        def ok(works: list[tuple[str, str, int, int]]):
-            self.developer_view.set_my_works(works)
-        def ng(e: Exception):
-            messagebox.showerror("Error", f"Failed to fetch my works: {str(e)}")
-        self._client_controller.fetch_my_works(on_result=ok, on_error=ng)
+    # def _on_my_works_click(self):
+    #     def ok(works: list[tuple[str, str, int, int]]):
+    #         self.developer_view.set_my_works(works)
+    #     def ng(e: Exception):
+    #         messagebox.showerror("Error", f"Failed to fetch my works: {str(e)}")
+    #     self._client_controller.fetch_my_works(on_result=ok, on_error=ng)
 
     def _on_register_submit(self, username: str, password: str, role: str):
         def ok():

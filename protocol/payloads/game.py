@@ -89,3 +89,7 @@ class DownloadGameChunkResponsePayload:
 @dataclass
 class DownloadGameFinishPayload:
     download_id: str
+
+@dataclass
+class RemoveGamePayload:
+    game_name: str

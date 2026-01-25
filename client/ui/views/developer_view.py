@@ -9,8 +9,9 @@ class DeveloperView(ctk.CTkFrame):
     def __init__(self, master, 
                  logout_callback: Optional[Callable[[], None]] = None, 
                  upload_callback: Optional[Callable[[str, str, int, int, str], None]] = None, 
-                 my_works_callback: Optional[Callable[[], None]] = None, 
+                 fetch_my_works_callback: Optional[Callable[[Callable[[list[tuple[str, str, int, int]]], None], Callable[[Exception], None]], None]] = None,
                  create_template_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None, 
+                 remove_game_callback: Optional[Callable[[str, Callable[[], None], Callable[[Exception], None]], None]] = None,
                  get_user_info_callback: Optional[Callable[[Callable[[str], None], Optional[Callable[[Exception], None]]], None]] = None):
         super().__init__(master)
 
@@ -19,8 +20,8 @@ class DeveloperView(ctk.CTkFrame):
         #     self, text="Logout",
         #     command=logout_callback
         # ).place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
-        self._my_works_callback = my_works_callback
-        self.my_works_page = MyWorksPage(self, create_template_callback=create_template_callback)
+        # self._my_works_callback = my_works_callback
+        self.my_works_page = MyWorksPage(self, fetch_my_works_callback=fetch_my_works_callback, create_template_callback=create_template_callback, remove_game_callback=remove_game_callback)
         self.upload_page = UploadPage(self, on_upload_callback=upload_callback)
         self.account_page = AccountPage(self, logout_callback=logout_callback, get_user_info_callback=get_user_info_callback)
         self.tab_bar = TabBar(self, command=self._on_tabbar_click)
@@ -34,8 +35,7 @@ class DeveloperView(ctk.CTkFrame):
     def _on_tabbar_click(self, id: str):
         # print(f"DeveloperView: Tab '{id}' clicked.")
         if id == "my_works":
-            if self._my_works_callback:
-                self._my_works_callback()
+            self.my_works_page.refresh()
         elif id == "account":
             self.account_page.update_user_info()
 

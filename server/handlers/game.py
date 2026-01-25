@@ -13,7 +13,8 @@ from protocol.payloads.game import (
     FetchStorePayload, FetchStoreResponsePayload, 
     FetchGameCoverPayload, FetchGameCoverResponsePayload,
     FetchGameDetailPayload, FetchGameDetailResponsePayload, 
-    DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload
+    DownloadGameInitPayload, DownloadGameChunkPayload, DownloadGameFinishPayload, DownloadGameInitResponsePayload, DownloadGameChunkResponsePayload, 
+    RemoveGamePayload
 )
 from protocol.enums import Role
 from protocol.payloads.common import EmptyPayload
@@ -347,6 +348,40 @@ def handle_upload_finish(
             shutil.rmtree(game_dir, ignore_errors=True)
             
         return payload, False, "Internal server error"
+    
+def handle_remove_game(
+    payload: RemoveGamePayload,
+    db: Database,
+    session_user_map: SessionUserMap,
+    session: Session
+) -> Tuple[EmptyPayload, bool, str]:
+    user_info = session_user_map.get_user_by_session(session)
+    if not user_info:
+        return EmptyPayload(), False, "Unauthenticated session"
+    
+    role, username = user_info
+    if role != Role.DEVELOPER:
+        return EmptyPayload(), False, "Unauthorized action"
+    
+    game = db.get_game(payload.game_name)
+    if not game:
+        return EmptyPayload(), False, "Game not found"
+    
+    _, developer, _, _, _, _, _, file_path = game
+    if developer != username:
+        return EmptyPayload(), False, "Permission denied: You are not the developer of this game"
+    
+    # Remove from DB
+    success = db.delete_game(payload.game_name)
+    if not success:
+        return EmptyPayload(), False, "Database error"
+    
+    # Remove game files
+    if os.path.exists(file_path):
+        shutil.rmtree(file_path, ignore_errors=True)
+    
+    logger.info(f"Game removed: {payload.game_name} by {username}")
+    return EmptyPayload(), True, ""
 
 def handle_fetch_my_works(
     payload: EmptyPayload, 

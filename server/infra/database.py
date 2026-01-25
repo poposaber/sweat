@@ -189,3 +189,15 @@ class Database:
         except Exception as e:
             logger.error("Error updating game %s: %s", name, e)
             return False
+        
+    def delete_game(self, name: str) -> bool:
+        """Delete a game by name. Returns True if successful, False otherwise."""
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM games WHERE name = ?", (name,))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error("Error deleting game %s: %s", name, e)
+            return False

@@ -1,10 +1,9 @@
 import customtkinter
 from typing import Callable, Optional
-from .clickable_row import ClickableRow
 
-class DevelopedGameRow(ClickableRow):
-    def __init__(self, master, game_name: str, version: str, min_players: int, max_players: int, command: Optional[Callable[[], None]] = None, **kwargs):
-        super().__init__(master, height=40, command=command, **kwargs)
+class DevelopedGameRow(customtkinter.CTkFrame):
+    def __init__(self, master, game_name: str, version: str, min_players: int, max_players: int, remove_command: Optional[Callable[[], None]] = None, **kwargs):
+        super().__init__(master, height=40, **kwargs)
 
         self.game_name_label = customtkinter.CTkLabel(self, text=game_name, font=("Arial", 14), fg_color="transparent")
         self.game_name_label.place(relx=0.1, rely=0.5, anchor="w")
@@ -14,3 +13,6 @@ class DevelopedGameRow(ClickableRow):
 
         self.version_label = customtkinter.CTkLabel(self, text=f"Version: {version}", font=("Arial", 12), fg_color="transparent")
         self.version_label.place(relx=0.9, rely=0.5, anchor="e")
+
+        self.remove_button = customtkinter.CTkButton(self, text="Remove", width=80, height=30, fg_color="#FF5C5C", hover_color="#FF3B3B", command=remove_command)
+        self.remove_button.place(relx=0.99, rely=0.5, anchor="e")
