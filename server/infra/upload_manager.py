@@ -5,6 +5,8 @@ import threading
 from dataclasses import dataclass
 from typing import Optional
 
+DEFAULT_TEMP_DIR = os.path.join("storage", "temp")
+
 @dataclass
 class UploadState:
     upload_id: str
@@ -20,7 +22,7 @@ class UploadState:
     last_activity: float
 
 class UploadManager:
-    def __init__(self, temp_dir: str = "storage/temp"):
+    def __init__(self, temp_dir: str = DEFAULT_TEMP_DIR):
         self._temp_dir = temp_dir
         self._uploads: dict[str, UploadState] = {}
         self._lock = threading.Lock()

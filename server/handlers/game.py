@@ -28,7 +28,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-GAMES_DIR = "storage/games"
+GAMES_DIR = os.path.join("storage", "games")
 CHUNK_SIZE = 1024 * 1024  # 1MB
 
 def handle_upload_init(

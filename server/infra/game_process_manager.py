@@ -9,10 +9,12 @@ import uuid
 import zipfile
 from typing import Dict, Optional, Tuple, Callable
 
+DEFAULT_RUN_DIR = os.path.join("storage", "runtime")
+
 logger = logging.getLogger(__name__)
 
 class GameProcessManager:
-    def __init__(self, base_run_dir: str = "storage/runtime"):
+    def __init__(self, base_run_dir: str = DEFAULT_RUN_DIR):
         self._input_base_run_dir = base_run_dir
         self._run_dir = os.path.abspath(base_run_dir)
         self._running_processes: Dict[str, subprocess.Popen] = {} # room_id -> Popen
