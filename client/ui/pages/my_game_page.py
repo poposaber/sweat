@@ -20,6 +20,8 @@ class MyGamePage(customtkinter.CTkFrame):
         self._on_create_room_click = on_create_room_click
         self._fetch_game_detail_callback = fetch_game_detail_callback
         self._delete_game_callback = delete_game_callback
+        
+        self.no_games_label = customtkinter.CTkLabel(self, text="No games downloaded.", font=("Arial", 16))
 
     def set_library_manager(self, library_manager: Optional[LibraryManager]):
         self._library_manager = library_manager
@@ -45,12 +47,18 @@ class MyGamePage(customtkinter.CTkFrame):
         # 1. Get games from local manifest
         if not self._library_manager:
             self.game_row_container.clear_game_rows()
+            self.no_games_label.place(relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
             return
         self._library_manager.ensure_library_exists()
         installed_games = self._library_manager.get_installed_games()
         
         # 2. Clear existing rows (you might need to add a clear method to container)
         self.game_row_container.clear_game_rows()
+        if not installed_games:
+            self.no_games_label.place(relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
+            return
+        
+        self.no_games_label.place_forget()
         
         # 3. Add rows
         for game_name, game_info in installed_games.items():

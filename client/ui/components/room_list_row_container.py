@@ -37,3 +37,6 @@ class RoomListRowContainer(RowContainer):
     def set_room_rows(self, rooms: list[tuple[str, str, str, int, int, str, Optional[Callable[[], None]]]]):
         self.clear_room_rows()
         self.add_room_rows(rooms)
+
+    def is_empty(self) -> bool:
+        return len(self._row_dict) == 0

@@ -31,3 +31,6 @@ class PlayerListRowContainer(RowContainer):
     def set_player_rows(self, players: list[str]):
         self.clear_player_rows()
         self.add_player_rows(players)
+
+    def is_empty(self) -> bool:
+        return len(self._row_dict) == 0
