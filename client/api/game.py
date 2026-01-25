@@ -21,6 +21,7 @@ from protocol.payloads.game import (
 from protocol.payloads.common import EmptyPayload
 from client.infra.library_manager import LibraryManager
 import zipfile
+import shutil
 
 def upload_game(
     session: Session, 
@@ -201,6 +202,7 @@ def download_game(
         with zipfile.ZipFile(dest_file_path, 'r') as zip_ref:
             zip_ref.extractall(extract_folder)
     except zipfile.BadZipFile as e:
+        shutil.rmtree(extract_folder, ignore_errors=True)
         return Message.response(Action.DOWNLOAD_GAME_FINISH, None, ok=False, error=f"Unzip error: {e}")
     
     # 6. Register game and cleanup
