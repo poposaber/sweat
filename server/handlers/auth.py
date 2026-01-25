@@ -50,8 +50,9 @@ def handle_login(payload: Credential, db: Database, session_user_map: SessionUse
 	session_user_map.move_session_to_user(session, role, payload.username)
 
 	logger.info(f"Login success: {payload.username} as {payload.role}")
-	# broadcast player logged in event
-	broadcast_player_logged_in_event(session_user_map, payload.username)
+	# broadcast player logged in event if player logged in
+	if role == Role.PLAYER:
+		broadcast_player_logged_in_event(session_user_map, payload.username)
 	return payload, True, None
 
 
