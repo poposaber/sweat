@@ -25,10 +25,10 @@ class MyGameRowContainer(RowContainer):
         super().clear_rows()
         self._row_dict.clear()
 
-    def set_game_row_button(self, game_name: str, button_text: str, button_callback: Optional[Callable[[], None]] = None):
+    def set_game_row_button(self, game_name: str, button_text: str, button_callback: Optional[Callable[[], None]] = None, enabled: bool = True):
         row = self.get_game_row(game_name)
         if row:
-            row.set_button(button_text, button_callback)
+            row.set_button(button_text, button_callback, enabled)
 
     def set_game_rows(self, games: list[tuple[str, str, int, int, Optional[Callable[[], None]], Optional[Callable[[], None]]]]):
         self.clear_game_rows()

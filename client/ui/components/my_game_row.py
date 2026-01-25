@@ -22,5 +22,5 @@ class MyGameRow(customtkinter.CTkFrame):
         self.interact_button = customtkinter.CTkButton(self, text="Create Room", width=80, height=30, command=interact_button_callback)
         self.interact_button.place(relx=0.99, rely=0.5, anchor=customtkinter.E)
 
-    def set_button(self, text: str, command: Optional[Callable[[], None]] = None):
-        self.interact_button.configure(text=text, command=command)
+    def set_button(self, text: str, command: Optional[Callable[[], None]] = None, Enabled: bool = True):
+        self.interact_button.configure(text=text, command=command, state="normal" if Enabled else "disabled")

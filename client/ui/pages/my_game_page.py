@@ -66,7 +66,7 @@ class MyGamePage(customtkinter.CTkFrame):
                 self._fetch_game_detail_callback(
                     game_name,
                     lambda dv, gv, minp, maxp, gd, localver=version, game_name=game_name: self.on_fetch_game_detail(game_name, gv, localver),
-                    self._on_error
+                    lambda error, game_name=game_name: self.on_fetch_game_detail_error(game_name, error)
                 )
 
     def on_fetch_game_detail(self, game_name: str, game_version: str, local_version: str):
@@ -92,6 +92,15 @@ class MyGamePage(customtkinter.CTkFrame):
                 "Create Room",
                 lambda game_name=game_name: ocrc(game_name)
             )
+
+    def on_fetch_game_detail_error(self, game_name: str, error: Exception):
+        self.game_row_container.set_game_row_button(
+            game_name,
+            "Error", 
+            None,
+            enabled=False
+        )
+
 
     def _on_download_complete(self):
         messagebox.showinfo("Download Complete", "Updated successfully.")
