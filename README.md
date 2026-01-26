@@ -68,7 +68,7 @@ pip install -r requirements.txt
 ```powershell
 python -m server
 # 或指定參數
-# python -m server --host 127.0.0.1 --port 8888
+# python -m server --host 127.0.0.1
 ```
 
 ### 3. 啟動客戶端
