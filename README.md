@@ -1,63 +1,96 @@
-# Sweat TCP Client/Server
+# Sweat - Multiplayer Game Platform
 
-一個以 Python 實作的簡易 TCP 客戶端/伺服器專案，包含：傳輸層（長度前綴封包）、`Session` 收送迴圈、`protocol` 訊息/JSON 編解碼、伺服器 `dispatcher` 與客戶端 `customtkinter` GUI。
+**Sweat** 是一個基於 Python 的網路遊戲平台，實作了完整的 Client-Server 架構。它允許開發者上傳遊戲，玩家下載並在虛擬房間中與朋友連線遊玩。
 
-## 需求
-- Python 3.10+（使用了 PEP 604 聯集型別 `A | B`）
-- Windows/ macOS/ Linux 皆可；Windows 需允許防火牆對本機埠的存取
-- 依賴套件：`customtkinter`
+專案展示了從底層 Socket 通訊、自定義協定設計、到上層 GUI 與多進程遊戲執行的完整整合。
 
-## 安裝
-建議使用虛擬環境（若已建立 `.venv` 可跳過）：
+## 🌟 主要功能 (Features)
+
+### 核心系統
+- **自定義通訊協定**：基於 TCP 的長度前綴 (Length-prefixed) 封包與 JSON 訊息交換。
+- **Session 管理**：支援 Request/Response 同步請求、Event 非同步通知、與 Connection Keep-alive 機制。
+- **心跳檢測 (Heartbeat)**：實作雙向健康檢查，Client 主動 Ping，Server 回應 Pong，閒置自動斷線 (Idle Timeout)。
+
+### 遊戲平台功能
+- **商店與庫 (Store & Library)**：
+    - 開發者可將遊戲打包為 ZIP 上傳。
+    - 支援大檔案分塊傳輸 (Chunked Transfer)。
+    - 自動下載、驗證雜湊 (Hash Check)、解壓縮安裝。
+- **房間系統 (Lobby System)**：
+    - 即時更新的房間列表。
+    - 支援建立房間、加入房間、權限管理。
+- **遊戲啟動 (Game Launcher)**：
+    - **獨立進程環境**：遊戲在獨立的 Process 中執行，不影響主程式。
+    - **動態注入**：使用 Bootstrapping 技術動態設定 `sys.path`，讓下載的遊戲模組能直接被 import 執行。
+
+### 使用者介面 (GUI)
+- 使用 **CustomTkinter** 打造現代化的深色模式介面。
+- 頁面切換、即時狀態反饋、錯誤處理提示。
+
+## 🛠️ 技術堆疊 (Tech Stack)
+
+- **語言**: Python 3.10+
+- **GUI 框架**: CustomTkinter
+- **網路**: Python `socket`, `threading` (Raw TCP implementation)
+- **其他依賴**: `Pillow`, `pygame` (範例小遊戲用)
+
+## 📂 專案結構
+
+```text
+sweat/
+├── client/              # 客戶端程式碼 (GUI, 邏輯控制)
+├── server/              # 伺服器程式碼 (Handler, DB, 房間管理)
+├── common/              # 共用工具與常數
+├── protocol/            # 通訊協定 (Message, Enums, Payloads)
+├── session/             # 網路層封裝 (Session, Heartbeat)
+├── transport/           # 底層 Socket 處理 (Framing)
+├── library/             # [Client] 下載遊戲的存放位置
+├── storage/             # [Server] 遊戲檔案與伺服器資料
+└── sweat.db             # [Server] 數據庫檔案
+```
+
+## 🚀 快速開始 (Getting Started)
+
+### 1. 安裝依賴
+
+建議使用虛擬環境：
 
 ```powershell
-# 建立並啟用虛擬環境（Windows PowerShell）
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-
-# 安裝依賴
 pip install -r requirements.txt
 ```
 
-## 快速開始
-- 啟動伺服器（內含簡易 CLI，可輸入 `status` 或 `quit`）：
+### 2. 啟動伺服器
+
+目前預設伺服器位於linux1.cs.nycu.edu.tw。伺服器預設監聽 `0.0.0.0:14253`。
+
 ```powershell
-python -m server --host 127.0.0.1 --port 14253
+python -m server
+# 或指定參數
+# python -m server --host 127.0.0.1 --port 8888
 ```
-- 另開新終端啟動客戶端 GUI（預設連線到上述位址）：
+
+### 3. 啟動客戶端
+
+啟動 GUI 客戶端連線至伺服器。
+
 ```powershell
-python -m client --host 127.0.0.1 --port 14253
+python -m client
+# 或指定參數
+# python -m client --host 127.0.0.1
 ```
 
-## 測試（目前為簡易直跑腳本）
-```powershell
-python tests\protocol\roundtrip_auth.py
-python tests\server\dispatcher_roundtrip.py
-```
-說明：以上腳本使用 `assert` 直接驗證協定編解碼與伺服器分派。未採用 pytest；後續可升級為 `pytest -q`。
+## 🎮 開發者指南
 
-## 專案結構
-- `client/`：客戶端核心（`client.py`、`client_controller.py`、`client_gui.py`、`ui/login_page.py`）
-- `server/`：伺服器（`server.py`、`dispatcher.py`、`handlers/auth.py`、`infra/acceptor.py`、`__main__.py`）
-- `protocol/`：訊息模型與編解碼（`message.py`、`json_codec.py`、`enums.py`、`payloads/*`）
-- `session/`：`Session` 抽象與背景接收迴圈（`session.py`）
-- `transport/`：TCP framing 與錯誤（`framed_socket.py`、`errors.py`）
-- `tests/`：輕量測試腳本
+### 上傳遊戲
+如果你是開發者，可以製作符合規範的 Python 遊戲包，壓縮成 ZIP 檔後透過客戶端上傳。
 
-## 重要檔案導覽
-- 伺服器入口：`server/__main__.py`（CLI）
-- 客戶端入口：`client/__main__.py`（GUI）
-- 協定編解碼：`protocol/json_codec.py`、`protocol/message.py`、`protocol/enums.py`
-- 傳輸封包：`transport/framed_socket.py`
-- 會話與收送：`session/session.py`
+## 📝 備註 (Notes)
 
-## 常見問題
-- 埠占用：若 14253 已被占用，請改用 `--port` 指定其他埠。
-- 防火牆：首次啟動伺服器時，Windows 可能提示防火牆授權，請允許本機連線。
-- `customtkinter` 未安裝：請先執行 `pip install -r requirements.txt`。
+- **Port**: 預設使用 TCP `14253`。
+- **資料儲存**: 伺服器目前使用記憶體資料結構暫存房間資訊，遊戲檔案儲存於 `storage/` 目錄。
+- **相容性**: 主要於 Windows 環境開發與測試，其他作業系統環境仍在測試階段。
 
-## 後續建議（規劃）
-- 將現有直跑測試遷移至 pytest。
-- 在 `client/api/auth.py` 將 `register()` 統一改用 `request_response()`。
-- 在 `server/dispatcher.py` 移除流程 `assert`，改為明確錯誤處理。
-- README 加入架構圖與更完整的協定文件（若需要）。
+---
+*Created as part of the Network Programming Course Project (Fall 2025).*
