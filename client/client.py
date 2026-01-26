@@ -12,11 +12,12 @@ from protocol.message import Message
 from protocol.enums import Action
 from typing import Callable
 import os
+import threading
 
 NORMAL_TIMEOUT = 3.0  # seconds
 MAX_CONNECT_ATTEMPTS = 3
+logger = logging.getLogger(__name__)
 
-import threading
 
 class Client:
     def __init__(self, addr: tuple[str, int], trace_io: bool = False) -> None:
@@ -27,6 +28,7 @@ class Client:
         self._username: str | None = None
         self._library_manager: LibraryManager | None = None
         self._game_launcher: GameLauncher | None = None
+        self._idle_check_thread: threading.Thread | None = None
 
     def _on_event(self, event: Message, on_other_event: Callable[[Message], None] | None, on_game_launch_error: Callable[[str], None] | None) -> None:
         match event.action:
@@ -51,6 +53,17 @@ class Client:
                 if on_other_event:
                     on_other_event(event)
 
+    # def _idle_check_loop(self):
+    #     assert self._session is not None
+    #     while self.is_connected():
+    #         now = time.time()
+    #         last_active = self._session.last_active_time
+    #         if now - last_active > IDLE_PATIENCE:
+    #             logger.info("No activity for %.1f seconds, closing session", now - last_active)
+    #             self.close()
+    #             break
+    #         time.sleep(1.0)
+
     def connect(self, connect_timeout: float | None = None, on_event: Callable[[Message], None] | None = None, on_disconnect=None, on_game_launch_error: Callable[[str], None] | None = None):
         session = self._connector.connect(connect_timeout=connect_timeout, max_attempts=MAX_CONNECT_ATTEMPTS)
         self._session = session
@@ -62,6 +75,7 @@ class Client:
         def on_event_wrapper(event: Message):
             self._on_event(event, on_event, on_game_launch_error)
         self._session.start_recv_loop(on_event=on_event_wrapper, on_disconnect=on_disconnect)
+        self._session.start_heartbeat_loop()
     
     def is_connected(self) -> bool:
         return self._session is not None

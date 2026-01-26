@@ -4,6 +4,8 @@ class MessageType(Enum):
     REQUEST = 'request'
     RESPONSE = 'response'
     EVENT = 'event'
+    PING = 'ping'
+    PONG = 'pong'
 
 class Action(Enum):
     LOGIN = 'auth.login'

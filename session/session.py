@@ -8,6 +8,7 @@ from protocol.json_codec import encode as encode_message, decode as decode_messa
 from .errors import SessionError, SessionTimeoutError, SessionDisconnectedError
 from transport.errors import InteractionTimeoutError, DisconnectedError
 import threading
+import time
 
 logger = logging.getLogger(__name__)
 class Session:
@@ -17,12 +18,16 @@ class Session:
         self._response_dict: dict[str, Message] = {}
         self._cond = threading.Condition()
         self._stop_event = threading.Event()
-        self.recv_message_thread: Optional[threading.Thread] = None
+        self._disconnect_lock = threading.Lock()
+        self._recv_message_thread: Optional[threading.Thread] = None
+        self._heartbeat_thread: Optional[threading.Thread] = None
         self._on_event: Optional[Callable[[Message], None]] = None
         self._on_disconnect: Optional[Callable[[], None]] = None
-        self._rxloop_prev_timeout: float | None = None
+        # self._rxloop_prev_timeout: float | None = None
+        self._rxloop_prev_recv_timeout: float | None = None
         self._user_timeout: float | None = None
         self._trace_io: bool = False
+        self._last_active_time: float = time.time()  # Timestamp of last activity
 
     def set_trace_io(self, enabled: bool) -> None:
         self._trace_io = bool(enabled)
@@ -30,16 +35,21 @@ class Session:
     @property
     def peer_address(self) -> tuple[str, int] | None:
         return self._fsock.peer_address
+    
+    @property
+    def last_active_time(self) -> float:
+        return self._last_active_time
 
     def send_message(self, message: Message):
         try:
             data = encode_message(message)
-            if self._trace_io:
+            if self._trace_io and message.type not in (MessageType.PING, MessageType.PONG):
                 record = data.decode("utf-8")
                 if len(record) > 512:
                     record = record[:512] + "...(truncated)"
                 logger.debug("TX %s", record)
             self._fsock.send(data)
+            # self._last_active_time = time.time()
         except InteractionTimeoutError as e:
             raise SessionTimeoutError("send_message timed out") from e
         except Exception as e:
@@ -48,14 +58,23 @@ class Session:
 
     def receive_message(self) -> Message:
         try:
-            data = self._fsock.receive()
-            message = decode_message(data)
-            if self._trace_io:
-                record = data.decode("utf-8")
-                if len(record) > 512:
-                    record = record[:512] + "...(truncated)"
-                logger.debug("RX %s", record)
-            return message
+            while True:
+                data = self._fsock.receive()
+                self._last_active_time = time.time()
+                message = decode_message(data)
+                if self._trace_io and message.type not in (MessageType.PING, MessageType.PONG):
+                    record = data.decode("utf-8")
+                    if len(record) > 512:
+                        record = record[:512] + "...(truncated)"
+                    logger.debug("RX %s", record)
+                if message.type == MessageType.PING:
+                    # Send pong
+                    self.send_message(Message.pong())
+                    continue
+                elif message.type == MessageType.PONG:
+                    # Ignore pong
+                    continue
+                return message
         except InteractionTimeoutError as e:
             # 接收超時屬於「暫時無資料」，上層可選擇重試或忽略
             raise SessionTimeoutError("receive_message timed out") from e
@@ -79,7 +98,7 @@ class Session:
             # Defensive: although Message.request always sets msg_id
             logger.debug("request_response called with message without msg_id; sending anyway")
         # If background recv loop is running, coordinate via condition + response_dict
-        if self.recv_message_thread is not None and self.recv_message_thread.is_alive():
+        if self._recv_message_thread is not None and self._recv_message_thread.is_alive():
             self.send_message(message)
             with self._cond:
                 while req_id not in self._response_dict:
@@ -106,7 +125,7 @@ class Session:
     
     def close(self):
         try:
-            self.stop_recv_loop()
+            self.stop_all_loops()
             self._fsock.close()
         except Exception as e:
             # 不在下層記 exception，改由呼叫端/邊界統一記錄
@@ -119,7 +138,7 @@ class Session:
     #     此處不會立刻更動底層 socket 的 timeout；而是記錄使用者期望值，
     #     並在 `stop_recv_loop()` 時優先套用。這可避免把接收迴圈改回阻塞狀態。
     #     """
-    #     if self.recv_message_thread is not None and self.recv_message_thread.is_alive():
+    #     if self._recv_message_thread is not None and self._recv_message_thread.is_alive():
     #         self._user_timeout = timeout
     #         logger.debug("settimeout deferred while recv loop running; will apply on stop: %s", timeout)
     #         return
@@ -145,7 +164,7 @@ class Session:
 
         如果背景接收迴圈正在執行，只會紀錄使用者期望值，在 stop_recv_loop() 時優先套用。
         """
-        if self.recv_message_thread is not None and self.recv_message_thread.is_alive():
+        if self._recv_message_thread is not None and self._recv_message_thread.is_alive():
             self._rxloop_prev_recv_timeout = timeout
             logger.debug("set_recv_timeout deferred while recv loop running; will apply on stop: %s", timeout)
             return
@@ -169,7 +188,7 @@ class Session:
         If `on_disconnect` provided, it's called when the session is disconnected.
         Safe to call multiple times; only starts if not already running.
         """
-        if self.recv_message_thread is not None and self.recv_message_thread.is_alive():
+        if self._recv_message_thread is not None and self._recv_message_thread.is_alive():
             return
         self._on_event = on_event
         self._on_disconnect = on_disconnect
@@ -184,20 +203,45 @@ class Session:
             # 若設置失敗，不影響主流程；只是可能需要靠 join 超時結束
             pass
         t = threading.Thread(target=self._recv_loop, name="SessionRecvLoop", daemon=True)
-        self.recv_message_thread = t
+        self._recv_message_thread = t
         t.start()
 
-    def stop_recv_loop(self) -> None:
-        if self.recv_message_thread is None:
+    def start_heartbeat_loop(self, interval: float = 10.0) -> None:
+        """Start background heartbeat sending loop.
+
+        Safe to call multiple times; only starts if not already running.
+        """
+        if self._heartbeat_thread is not None and self._heartbeat_thread.is_alive():
             return
+        self._stop_event.clear()
+        t = threading.Thread(target=self._heartbeat_loop, args=(interval,), name="SessionHeartbeatLoop", daemon=True)
+        self._heartbeat_thread = t
+        t.start()
+
+    def stop_all_loops(self) -> None:
+        """Stop all background loops (receive and heartbeat)."""
         self._stop_event.set()
+        
+        current_thread = threading.current_thread()
+
         # Waking up the thread if it's blocked on socket happens when socket closes
         try:
-            self.recv_message_thread.join(timeout=2.0)
+            if self._recv_message_thread is not None and self._recv_message_thread is not current_thread:
+                self._recv_message_thread.join(timeout=2.0)
         except Exception:
             pass
+
+        try:
+            if self._heartbeat_thread is not None and self._heartbeat_thread is not current_thread:
+                self._heartbeat_thread.join(timeout=2.0)
+        except Exception:
+            pass
+
         finally:
-            self.recv_message_thread = None
+            self._recv_message_thread = None
+            self._heartbeat_thread = None
+            self._on_event = None
+            self._on_disconnect = None
             # 恢復原本的 io timeout 或套用 deferred 使用者設定，並恢復接收超時
             try:
                 # if self._user_timeout is not None:
@@ -212,6 +256,20 @@ class Session:
                 # self._rxloop_prev_timeout = None
                 self._rxloop_prev_recv_timeout = None
 
+    def _trigger_on_disconnect(self):
+        """Helper to safely call on_disconnect only once."""
+        callback = None
+        with self._disconnect_lock:
+            if self._on_disconnect:
+                callback = self._on_disconnect
+                self._on_disconnect = None  # Prevent double call
+        
+        if callback:
+            try:
+                callback()
+            except Exception:
+                logger.exception("on_disconnect callback raised")
+
     def _recv_loop(self) -> None:
         while not self._stop_event.is_set():
             try:
@@ -222,11 +280,7 @@ class Session:
             except SessionDisconnectedError:
                 # Server closed the connection, break the loop
                 logger.info("Session disconnected in background loop")
-                if self._on_disconnect:
-                    try:
-                        self._on_disconnect()
-                    except Exception:
-                        logger.exception("on_disconnect callback raised")
+                self._trigger_on_disconnect()
                 break
             except SessionError:
                 # Other session errors, log and continue
@@ -247,3 +301,26 @@ class Session:
                         self._event_queue.put(incoming)
             except Exception as e:
                 logger.exception(f"Unexpected error in recv loop routing: {e}")
+
+    def _heartbeat_loop(self, interval: float = 10.0) -> None:
+        # Initial check or wait? Let's just enter the loop.
+        while not self._stop_event.wait(interval):
+            # Check if server is dead (Client-side Idle Timeout)
+            # If we haven't received ANY data (including PONGs due to traffic) for 3x interval,
+            # assume connection is dead/frozen.
+            time_since_last_active = time.time() - self._last_active_time
+            if time_since_last_active > interval * 3:
+                logger.warning(f"Server idle timeout ({time_since_last_active:.1f}s > {interval*3}s). Disconnecting.")
+                self._trigger_on_disconnect()
+                break
+
+            # Send PING
+            try:
+                self.send_message(Message.ping())
+            except SessionError:
+                logger.info("Failed to send heartbeat; assuming disconnected")
+                self._trigger_on_disconnect()
+                break
+            except Exception as e:
+                logger.error(f"Error sending heartbeat: {e}")
+                # Don't break on transient errors, just wait for next interval

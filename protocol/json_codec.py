@@ -79,7 +79,7 @@ def encode(message: Message) -> bytes:
     # Serialize enums to their value and dataclass payloads to dicts.
     msg_type_str = message.type.value if isinstance(message.type, MessageType) else message.type
     action_str = (
-        message.action.value if (message.action is not None and isinstance(message.action, Action)) else message.action
+        message.action.value if message.action is not None else None
     )
 
     # Only serialize dataclass instances (not dataclass classes)
@@ -113,12 +113,14 @@ def decode(data: bytes) -> Message:
     """Decode JSON bytes to a Message object."""
     obj = json.loads(data.decode("utf-8"))
     msg_type = MessageType(obj["type"])
-    action = Action(obj["action"])
+    action = Action(obj["action"]) if "action" in obj else None
     
     if msg_type == MessageType.RESPONSE and action in _RESPONSE_PAYLOAD_MAP:
         payload_cls = _RESPONSE_PAYLOAD_MAP[action]
-    else:
+    elif action is not None:
         payload_cls = _PAYLOAD_MAP.get(action, EmptyPayload)
+    else:
+        payload_cls = EmptyPayload
 
     try:
         # Handle EmptyPayload special case (it has no fields)

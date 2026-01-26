@@ -3,9 +3,10 @@ import uuid
 from dataclasses import dataclass, asdict
 from .enums import MessageType, Action
 from typing import Optional
+from .payloads.common import EmptyPayload
 
 class Message:
-    def __init__(self, *, type: MessageType, payload, action: Action, msg_id: Optional[str]=None, ok: Optional[bool]=None, error: Optional[str]=None):
+    def __init__(self, *, type: MessageType, payload, action: Optional[Action], msg_id: Optional[str]=None, ok: Optional[bool]=None, error: Optional[str]=None):
         self.type = type
         self.action = action
         self.payload = payload
@@ -49,6 +50,22 @@ class Message:
             payload=payload,
             ok=ok,
             error=error,
+        )
+    
+    @classmethod
+    def ping(cls):
+        return cls(
+            type=MessageType.PING,
+            action=None,
+            payload=EmptyPayload()
+        )
+    
+    @classmethod
+    def pong(cls):
+        return cls(
+            type=MessageType.PONG,
+            action=None,
+            payload=EmptyPayload()
         )
 
     # def to_json(self) -> bytes:

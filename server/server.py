@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 from typing import Optional
 from server.infra.acceptor import Acceptor
 from session.session import Session
@@ -11,6 +12,8 @@ from server.infra.room_manager import RoomManager
 from server.infra.game_process_manager import GameProcessManager
 from protocol.enums import Role
 from server.api.event_publisher import broadcast_leave_room_event, broadcast_player_logged_out_event
+
+IDLE_PATIENCE = 30  # seconds
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,7 @@ class Server:
         self._dispatcher = Dispatcher(self._db, self._session_user_map, self._room_manager, self._game_process_manager)
         self._stop_event = threading.Event()
         self._threads: list[threading.Thread] = []
+        self._idle_check_thread: Optional[threading.Thread] = None
         # self._sessions: list[Session] = []
         
         self._trace_io = bool(trace_io)
@@ -36,6 +40,10 @@ class Server:
     def serve(self):
         """Accept connections in a loop and handle each in a dedicated thread."""
         logger.info("Server listening on %s:%d", self._addr[0], self._addr[1])
+        idle_check_thread = threading.Thread(target=self._idle_check_loop, name="IdleCheckLoop", daemon=True)
+        self._idle_check_thread = idle_check_thread
+        idle_check_thread.start()
+        logger.info("Idle check thread started")
         while not self._stop_event.is_set():
             try:
                 session, addr = self._acceptor.accept()
@@ -53,6 +61,20 @@ class Server:
             self._threads.append(t)
             self._session_user_map.add_session(session)
             t.start()
+
+    def _idle_check_loop(self):
+        """Periodically check for idle sessions and close them."""
+        try:
+            while not self._stop_event.is_set():
+                now = time.time()
+                for session in self._session_user_map.get_all_sessions():
+                    last_active = session.last_active_time
+                    if now > last_active + IDLE_PATIENCE:
+                        logger.info(f"Closing idle session {session.peer_address} (last active at {time.ctime(last_active)})")
+                        self._cleanup_session(session)
+                time.sleep(1)
+        except Exception:
+            logger.exception("Idle check loop error")  
 
     def _client_loop(self, session: Session, addr: Optional[tuple[str, int]] = None):
         """Per-connection loop: receive, dispatch, respond until error or stop."""
@@ -82,7 +104,13 @@ class Server:
     #     self._game_process_manager.clean_cache(room_id)
 
     def _cleanup_session(self, session: Session):
+        # Trying to remove session from the map first.
+        # If get_user_by_session returns None, it means it's already cleaned up or anonymous.
         userinfo = self._session_user_map.get_user_by_session(session)
+        
+        # Remove explicitly to prevent double processing
+        self._session_user_map.remove_session(session)
+
         if userinfo:
             role, username = userinfo
             logger.info(f"Cleaning up session for user={username}, role={role}")
@@ -93,11 +121,11 @@ class Server:
                     broadcast_leave_room_event(self._room_manager, self._session_user_map, username, room_id)
                     logger.info(f"User {username} removed from room {room_id} on session cleanup")
                 broadcast_player_logged_out_event(self._session_user_map, username)
-        self._session_user_map.remove_session(session)
+        
         try:
             session.close()
         except Exception:
-            logger.exception("Failed to close session in client loop")
+            logger.exception("Failed to close session")
 
     def close(self):
         self.stop()
